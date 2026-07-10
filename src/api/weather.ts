@@ -1,4 +1,5 @@
 import type { Place } from '@/stores/places'
+import { i18n } from '@/i18n'
 
 // --- Endpunkte -----------------------------------------------------------------
 // Alle Quellen sind key-frei und CORS-fähig → direkt aus dem Browser aufrufbar,
@@ -43,7 +44,7 @@ export async function searchPlaces(query: string): Promise<GeoResult[]> {
   const data = await getJson<GeoResponse>('/api/geocode', {
     name: query,
     count: 8,
-    language: 'de',
+    language: i18n.global.locale.value,
     format: 'json',
   })
   return data.results ?? []
@@ -168,10 +169,12 @@ export interface WeatherAlert {
   headline_de?: string
   headline_en?: string
   description_de?: string
+  description_en?: string
   severity?: string
   onset?: string
   expires?: string
   instruction_de?: string
+  instruction_en?: string
 }
 
 export async function fetchWarnings(place: Place): Promise<WeatherAlert[]> {

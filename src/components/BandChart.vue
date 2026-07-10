@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import type { EnsembleDay } from '@/lib/series'
 import { extent } from '@/lib/series'
+import { localeTag } from '@/i18n'
 
 const props = defineProps<{
   days: EnsembleDay[]
@@ -55,7 +56,7 @@ const ticks = computed(() => {
 
 const weekLabels = computed(() =>
   props.days
-    .map((d, i) => ({ i, label: new Date(d.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }) }))
+    .map((d, i) => ({ i, label: new Date(d.date).toLocaleDateString(localeTag(), { day: '2-digit', month: '2-digit' }) }))
     .filter((_, i) => i % 5 === 0),
 )
 
@@ -78,7 +79,7 @@ const hover = computed(() => {
   if (hoverI.value == null) return null
   const d = props.days[hoverI.value]
   return {
-    date: new Date(d.date).toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' }),
+    date: new Date(d.date).toLocaleDateString(localeTag(), { weekday: 'short', day: '2-digit', month: '2-digit' }),
     mean: d.median,
     p10: d.p10,
     p90: d.p90,
@@ -121,7 +122,7 @@ const hover = computed(() => {
       <!-- Grenze "verlässlich" -->
       <g v-if="reliableX != null">
         <line :x1="reliableX" :x2="reliableX" :y1="PAD.t" :y2="H - PAD.b" class="reliable" />
-        <text :x="reliableX + 4" :y="PAD.t + 12" class="reliable-label">ab hier unsicher</text>
+        <text :x="reliableX + 4" :y="PAD.t + 12" class="reliable-label">{{ $t('band.uncertainFromHere') }}</text>
       </g>
 
       <g class="xlabels">
@@ -139,7 +140,7 @@ const hover = computed(() => {
     <div v-if="hover" class="chart-tip">
       <div class="tip-dim">{{ hover.date }}</div>
       <div class="tip-mean">≈ {{ hover.mean.toFixed(0) }}°</div>
-      <div class="tip-dim">{{ hover.p10.toFixed(0) }}° – {{ hover.p90.toFixed(0) }}° möglich</div>
+      <div class="tip-dim">{{ hover.p10.toFixed(0) }}° – {{ hover.p90.toFixed(0) }}° {{ $t('band.possible') }}</div>
     </div>
   </div>
 </template>

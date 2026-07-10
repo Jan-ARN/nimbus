@@ -64,7 +64,7 @@ function pick(r: GeoResult) {
         class="flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-muted"
         @click="open = !open"
       >
-        <Plus :size="14" /> Ort
+        <Plus :size="14" /> {{ $t('place.add') }}
       </button>
 
       <div
@@ -76,7 +76,7 @@ function pick(r: GeoResult) {
           <input
             v-model="query"
             autofocus
-            placeholder="Stadt suchen…"
+            :placeholder="$t('place.search')"
             class="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
           />
         </div>
@@ -100,7 +100,7 @@ function pick(r: GeoResult) {
           v-else-if="query.length >= 2 && !loading"
           class="px-2.5 py-3 text-xs text-muted-foreground"
         >
-          Nichts gefunden.
+          {{ $t('place.empty') }}
         </div>
       </div>
     </div>

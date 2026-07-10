@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { extent, type NumArr } from '@/lib/series'
 import type { LineSeries } from '@/lib/chartTypes'
+import { localeTag } from '@/i18n'
 
 const props = defineProps<{
   time: string[]
@@ -73,7 +74,7 @@ const dayLabels = computed(() => {
     if (day !== last) {
       out.push({
         i,
-        label: new Date(props.time[i]).toLocaleDateString('de-DE', {
+        label: new Date(props.time[i]).toLocaleDateString(localeTag(), {
           weekday: 'short',
           day: '2-digit',
         }),
@@ -114,7 +115,7 @@ const hoverReadout = computed(() => {
   if (hoverI.value == null) return null
   const i = hoverI.value
   return {
-    time: new Date(props.time[i]).toLocaleString('de-DE', {
+    time: new Date(props.time[i]).toLocaleString(localeTag(), {
       weekday: 'short',
       day: '2-digit',
       month: '2-digit',

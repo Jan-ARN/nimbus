@@ -114,9 +114,9 @@ function disagreeColor(d: number) {
 
     <!-- Ort + Modelle -->
     <section class="glass reveal p-5">
-      <div class="label mb-2">Ort</div>
+      <div class="label mb-2">{{ $t('place.label') }}</div>
       <PlaceSelector />
-      <div class="label mb-2 mt-4">Modelle vergleichen</div>
+      <div class="label mb-2 mt-4">{{ $t('compare.compareModels') }}</div>
       <div class="flex flex-wrap gap-2">
         <button
           v-for="m in WEATHER_MODELS"
@@ -138,8 +138,8 @@ function disagreeColor(d: number) {
     <section class="glass reveal p-5">
       <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 class="font-display text-[22px] font-semibold">Temperaturverlauf</h2>
-          <div class="label">stündlich · {{ selectedModels.length }} Modelle</div>
+          <h2 class="font-display text-[22px] font-semibold">{{ $t('compare.tempCourse') }}</h2>
+          <div class="label">{{ $t('compare.hourly') }} · {{ selectedModels.length }} {{ $t('compare.modelsCount') }}</div>
         </div>
         <div class="flex overflow-hidden rounded-full border border-border">
           <button
@@ -149,7 +149,7 @@ function disagreeColor(d: number) {
             :class="rangeDays === r ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'"
             @click="rangeDays = r"
           >
-            {{ r }} T
+            {{ r }} {{ $t('compare.daysAbbr') }}
           </button>
         </div>
       </div>
@@ -161,14 +161,14 @@ function disagreeColor(d: number) {
         :now-iso="hourly?.time[nowIdx]"
       />
       <div v-else class="grid h-52 place-items-center font-mono text-[13px] text-muted-foreground">
-        lädt Modelldaten…
+        {{ $t('compare.loadingModels') }}
       </div>
     </section>
 
     <!-- Tagesübersicht -->
     <section class="glass reveal p-5">
-      <h2 class="font-display text-[22px] font-semibold">16-Tage-Ausblick</h2>
-      <div class="label mb-4">Was die Modelle gemeinsam sagen · Tag antippen für Details</div>
+      <h2 class="font-display text-[22px] font-semibold">{{ $t('compare.outlook16') }}</h2>
+      <div class="label mb-4">{{ $t('compare.outlookSub') }}</div>
 
       <div class="flex flex-col">
         <div v-for="row in dailyRows" :key="row.day" class="border-b border-border last:border-0">
@@ -201,7 +201,7 @@ function disagreeColor(d: number) {
                 ±{{ (row.disagree / 2).toFixed(1) }}°
               </template>
               <!-- Bei nur 1 verbliebenen Modell ist ±0° kein Konsens, sondern fehlende Basis. -->
-              <span v-else class="text-warn" title="Nur ein Modell reicht so weit — keine belastbare Streuung">1 Modell</span>
+              <span v-else class="text-warn" :title="$t('compare.oneModelTitle')">{{ $t('compare.oneModel') }}</span>
             </span>
             <ChevronDown :size="18" class="text-muted-foreground transition-transform" :class="{ 'rotate-180': expandedDay === row.day }" />
           </button>
@@ -209,7 +209,7 @@ function disagreeColor(d: number) {
           <div v-if="expandedDay === row.day" class="grid gap-6 px-1 pb-5 pt-2 md:grid-cols-[1.3fr_1fr]">
             <!-- pro Modell -->
             <div>
-              <div class="label mb-2">Höchst-/Tiefstwert je Modell</div>
+              <div class="label mb-2">{{ $t('compare.minMaxPerModel') }}</div>
               <div v-for="m in row.perModel" :key="m.id" class="grid grid-cols-[52px_1fr_92px] items-center gap-2.5 py-1">
                 <span class="text-xs font-bold" :style="{ color: m.color }">{{ m.short }}</span>
                 <div class="relative h-2 rounded-full bg-muted">
@@ -229,24 +229,24 @@ function disagreeColor(d: number) {
             <!-- Detail-Werte -->
             <div v-if="row.rich" class="grid grid-cols-2 gap-px self-start overflow-hidden rounded-lg border border-border bg-border">
               <div class="bg-[color-mix(in_srgb,var(--background)_55%,transparent)] px-3 py-2.5">
-                <div class="label">Regen</div>
+                <div class="label">{{ $t('compare.rain') }}</div>
                 <div class="readout mt-1 text-xl">{{ Math.round(row.rich.precipProb ?? 0) }}%</div>
                 <div class="text-[11px] text-muted-foreground">{{ (row.rich.precipSum ?? 0).toFixed(1) }} mm</div>
               </div>
               <div class="bg-[color-mix(in_srgb,var(--background)_55%,transparent)] px-3 py-2.5">
-                <div class="label">Wind</div>
+                <div class="label">{{ $t('compare.wind') }}</div>
                 <div class="readout mt-1 text-xl">{{ Math.round(row.rich.windMax ?? 0) }}</div>
-                <div class="text-[11px] text-muted-foreground">Böen {{ Math.round(row.rich.gustMax ?? 0) }} km/h</div>
+                <div class="text-[11px] text-muted-foreground">{{ $t('compare.gusts') }} {{ Math.round(row.rich.gustMax ?? 0) }} km/h</div>
               </div>
               <div class="bg-[color-mix(in_srgb,var(--background)_55%,transparent)] px-3 py-2.5">
-                <div class="label">UV max</div>
+                <div class="label">{{ $t('compare.uvMax') }}</div>
                 <div class="readout mt-1 text-xl" :style="{ color: uvLevel(row.rich.uvMax).color }">{{ (row.rich.uvMax ?? 0).toFixed(1) }}</div>
                 <div class="text-[11px] text-muted-foreground">{{ uvLevel(row.rich.uvMax).label }}</div>
               </div>
               <div class="bg-[color-mix(in_srgb,var(--background)_55%,transparent)] px-3 py-2.5">
-                <div class="label">Sonne</div>
+                <div class="label">{{ $t('compare.sun') }}</div>
                 <div class="readout mt-1 text-xl">{{ fmtTime(row.rich.sunrise) }}</div>
-                <div class="text-[11px] text-muted-foreground">bis {{ fmtTime(row.rich.sunset) }}</div>
+                <div class="text-[11px] text-muted-foreground">{{ $t('compare.until') }} {{ fmtTime(row.rich.sunset) }}</div>
               </div>
             </div>
           </div>

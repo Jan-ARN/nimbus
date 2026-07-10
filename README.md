@@ -1,51 +1,55 @@
 <!-- ===== HERO (custom SVG — assets/banner.svg) — a dusk sky, the ensemble fanning out from "now" ===== -->
-<img width="100%" src="https://raw.githubusercontent.com/Jan-ARN/nimbus/main/assets/banner.svg" alt="Nimbus — der Himmel über Köln"/>
+<img width="100%" src="https://raw.githubusercontent.com/Jan-ARN/nimbus/main/assets/banner.svg" alt="Nimbus — the sky over Cologne"/>
 
 <div align="center">
 
-### Viele Wettermodelle, ein lebendiger Himmel.
+### Many weather models, one living sky.
 
-Eine kleine Wetter-App für Köln, die **mehrere Vorhersagemodelle vergleicht** und deren ganzes UI sich **an die echte Wetterlage anpasst** — der Hintergrund *ist* die Vorhersage: die 31 Ensemble-Läufe fächern als lebendiges Bündel über den Bildschirm, heißer Tag → Amber, klare Nacht → Sterne, Regen → Tropfen, Gewitter → Blitze.
+A small weather app for Cologne that **compares several forecast models** and whose entire UI **adapts to the actual conditions** — the background *is* the forecast: the 31 ensemble runs fan out as a living bundle across the screen, hot day → amber, clear night → stars, rain → drops, thunderstorm → lightning.
 
 <br/>
 
 ![version](https://img.shields.io/badge/version-0.1.0-243F52?labelColor=162936&style=flat-square)
 ![license](https://img.shields.io/badge/license-MIT-456A82?labelColor=162936&style=flat-square)
 ![Vue 3 + Vite](https://img.shields.io/badge/Vue%203-Vite-F0C880?labelColor=162936&style=flat-square)
-![just for fun](https://img.shields.io/badge/just-for%20fun-456A82?labelColor=162936&style=flat-square)
+![EN · DE](https://img.shields.io/badge/EN-·%20DE-456A82?labelColor=162936&style=flat-square)
 
-**[→ Live ansehen](https://jan-arn.github.io/nimbus/)**
+**[→ View it live](https://jan-arn.github.io/nimbus/)**
 
 </div>
 
-> Ein kleines Hobbyprojekt — entstanden, weil der Sommer hart war und sich die Wetter-Apps ständig widersprochen haben. Kein Produkt, einfach zum Spaß gebaut.
+> A little hobby project — born because the summer was brutal and the weather apps kept contradicting each other. Not a product, just built to see the sky honestly.
 
-## Was drin ist
+## What's inside
 
-- **Modelle** — aktuelle Lage (gefühlt, Wind, UV, Luft, Pollen, Sonne) plus Vergleich der Einzelmodelle (ICON, ECMWF, GFS, …) und ein aufklappbarer 16-Tage-Ausblick.
-- **Langfrist** — bis ~35 Tage aus dem GEFS-Ensemble: Median-Höchstwert + Streuband (je breiter, desto unsicherer) und der Trend „wärmer/kälter als heute".
-- **Luft** — Luftqualität (EAQI + Schadstoffe) und Pollenflug.
-- **Lebendiger Himmel** — das Ensemble-Feld im Hintergrund und die Farbpalette folgen den echten Bedingungen des aktiven Orts. DWD-Unwetterwarnungen (Bright Sky) erscheinen als Banner.
+- **Models** — current conditions (feels-like, wind, UV, air, pollen, sun) plus a comparison of the individual models (ICON, ECMWF, GFS, …) and an expandable 16-day outlook.
+- **Long range** — out to ~35 days from the GEFS ensemble: median high + spread band (the wider, the more uncertain) and the trend "warmer/colder than today".
+- **Air** — air quality (EAQI + pollutants) and pollen.
+- **Living sky** — the ensemble field in the background and the color palette follow the real conditions of the active location. DWD severe-weather warnings (Bright Sky) appear as a banner.
+- **Two languages** — English and German, toggled from the header and remembered in your browser.
 
-## Ein bisschen Meteorologie
+## A little meteorology
 
-Jenseits von ~7–10 Tagen gibt es keine präzise Einzelzahl. Nimbus zeigt darum den **Median aus 31 Simulationen** plus ein Streuband, statt eine scharfe Grad-Zahl vorzugaukeln — im Nahbereich belastbar, weiter draußen ehrlich unsicher.
+Beyond ~7–10 days there is no precise single number. So Nimbus shows the **median of 31 simulations** plus a spread band instead of faking a sharp degree figure — reliable up close, honestly uncertain further out.
 
 ## Stack
 
-Vue 3 + Vite + TypeScript · Tailwind CSS + reka-ui · Pinia · TanStack Query · lucide-Icons.
+Vue 3 + Vite + TypeScript · Tailwind CSS + reka-ui · Pinia · TanStack Query · vue-i18n · lucide icons.
 Fonts: Bricolage Grotesque / Hanken Grotesk / JetBrains Mono.
 
-Rein statisch — alle Quellen ([Open-Meteo](https://open-meteo.com), [Bright Sky](https://brightsky.dev)) sind kostenlos, key-frei und CORS-fähig und werden direkt aus dem Browser aufgerufen. Kein Backend, kein API-Key.
+Fully static — every source ([Open-Meteo](https://open-meteo.com), [Bright Sky](https://brightsky.dev)) is free, key-free and CORS-enabled, called straight from the browser. No backend, no API key.
 
-## Loslegen
+## Getting started
 
 ```bash
 npm install
 npm run dev        # http://localhost:5173
-npm run build      # → dist/  (typecheck + statischer Build)
+npm run build      # → dist/  (typecheck + static build)
 ```
 
-Deploy nach GitHub Pages passiert automatisch bei jedem Push auf `main` (siehe `.github/workflows/deploy.yml`).
+Deploy to GitHub Pages happens automatically on every push to `main` (see `.github/workflows/deploy.yml`).
 
-<div align="center"><br/><sub>MIT · gebaut mit ☕ und zu viel Sonne über Köln</sub></div>
+<div align="center"><br/><sub>MIT · built with ☕ and too much sun over Cologne</sub></div>
+
+<!-- ===== FOOTER (custom SVG — assets/footer.svg) — the ensemble converging at dusk, the creed ===== -->
+<img width="100%" src="https://raw.githubusercontent.com/Jan-ARN/nimbus/main/assets/footer.svg" alt="certain up close, honest far out — the sky is a spread, never a single number"/>

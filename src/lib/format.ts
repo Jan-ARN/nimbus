@@ -1,31 +1,39 @@
-// WMO Weather-Codes → Label + MDI-Icon (kompakte Auswahl)
-const WMO: Record<number, { label: string; icon: string }> = {
-  0: { label: 'Klar', icon: 'mdi-weather-sunny' },
-  1: { label: 'Überwiegend klar', icon: 'mdi-weather-partly-cloudy' },
-  2: { label: 'Teils bewölkt', icon: 'mdi-weather-partly-cloudy' },
-  3: { label: 'Bedeckt', icon: 'mdi-weather-cloudy' },
-  45: { label: 'Nebel', icon: 'mdi-weather-fog' },
-  48: { label: 'Reifnebel', icon: 'mdi-weather-fog' },
-  51: { label: 'Leichter Niesel', icon: 'mdi-weather-rainy' },
-  53: { label: 'Niesel', icon: 'mdi-weather-rainy' },
-  55: { label: 'Starker Niesel', icon: 'mdi-weather-pouring' },
-  61: { label: 'Leichter Regen', icon: 'mdi-weather-rainy' },
-  63: { label: 'Regen', icon: 'mdi-weather-rainy' },
-  65: { label: 'Starker Regen', icon: 'mdi-weather-pouring' },
-  71: { label: 'Leichter Schnee', icon: 'mdi-weather-snowy' },
-  73: { label: 'Schnee', icon: 'mdi-weather-snowy' },
-  75: { label: 'Starker Schnee', icon: 'mdi-weather-snowy-heavy' },
-  80: { label: 'Regenschauer', icon: 'mdi-weather-partly-rainy' },
-  81: { label: 'Schauer', icon: 'mdi-weather-pouring' },
-  82: { label: 'Heftige Schauer', icon: 'mdi-weather-pouring' },
-  95: { label: 'Gewitter', icon: 'mdi-weather-lightning' },
-  96: { label: 'Gewitter mit Hagel', icon: 'mdi-weather-lightning-rainy' },
-  99: { label: 'Schweres Gewitter', icon: 'mdi-weather-lightning-rainy' },
+import { i18n, localeTag } from '@/i18n'
+
+// t()/localeTag() lesen die aktive Sprache reaktiv → in computeds/Templates
+// verwendete Formatierer aktualisieren sich beim Sprachwechsel automatisch.
+const t = (key: string, params?: Record<string, unknown>) => i18n.global.t(key, params ?? {})
+
+// WMO Weather-Codes → Icon-Schlüssel (Label kommt aus den Übersetzungen)
+const WMO_ICON: Record<number, string> = {
+  0: 'mdi-weather-sunny',
+  1: 'mdi-weather-partly-cloudy',
+  2: 'mdi-weather-partly-cloudy',
+  3: 'mdi-weather-cloudy',
+  45: 'mdi-weather-fog',
+  48: 'mdi-weather-fog',
+  51: 'mdi-weather-rainy',
+  53: 'mdi-weather-rainy',
+  55: 'mdi-weather-pouring',
+  61: 'mdi-weather-rainy',
+  63: 'mdi-weather-rainy',
+  65: 'mdi-weather-pouring',
+  71: 'mdi-weather-snowy',
+  73: 'mdi-weather-snowy',
+  75: 'mdi-weather-snowy-heavy',
+  80: 'mdi-weather-partly-rainy',
+  81: 'mdi-weather-pouring',
+  82: 'mdi-weather-pouring',
+  95: 'mdi-weather-lightning',
+  96: 'mdi-weather-lightning-rainy',
+  99: 'mdi-weather-lightning-rainy',
 }
 
 export function wmo(code: number | null | undefined) {
-  if (code == null) return { label: '–', icon: 'mdi-weather-cloudy-alert' }
-  return WMO[code] ?? { label: `Code ${code}`, icon: 'mdi-weather-cloudy' }
+  if (code == null) return { label: t('none'), icon: 'mdi-weather-cloudy-alert' }
+  const icon = WMO_ICON[code] ?? 'mdi-weather-cloudy'
+  const label = code in WMO_ICON ? t(`wmo.${code}`) : t('wmo.code', { c: code })
+  return { label, icon }
 }
 
 export function fmtTemp(t: number | null | undefined, digits = 0): string {
@@ -34,12 +42,11 @@ export function fmtTemp(t: number | null | undefined, digits = 0): string {
 }
 
 export function fmtDay(iso: string): string {
-  const d = new Date(iso)
-  return d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' })
+  return new Date(iso).toLocaleDateString(localeTag(), { weekday: 'short', day: '2-digit', month: '2-digit' })
 }
 
 export function fmtWeekday(iso: string): string {
-  return new Date(iso).toLocaleDateString('de-DE', { weekday: 'short' })
+  return new Date(iso).toLocaleDateString(localeTag(), { weekday: 'short' })
 }
 
 // Farbverlauf kalt→heiß für Temperatur (grob an Wetterkarten angelehnt)
@@ -65,56 +72,55 @@ export function tempColor(t: number | null | undefined): string {
   return '#556'
 }
 
-// Windrichtung (Grad) → Kompass-Kürzel
-const COMPASS = ['N', 'NO', 'O', 'SO', 'S', 'SW', 'W', 'NW']
+// Windrichtung (Grad) → Kompass-Kürzel (lokalisiert: NO/O/SO vs. NE/E/SE)
+const COMPASS: Record<string, string[]> = {
+  'de-DE': ['N', 'NO', 'O', 'SO', 'S', 'SW', 'W', 'NW'],
+  'en-GB': ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'],
+}
 export function windDir(deg: number | null | undefined): string {
   if (deg == null) return '–'
-  return COMPASS[Math.round(deg / 45) % 8]
+  return COMPASS[localeTag()][Math.round(deg / 45) % 8]
 }
 
 // UV-Index → Stufe + Farbe
 export function uvLevel(uv: number | null | undefined): { label: string; color: string } {
-  if (uv == null) return { label: '–', color: '#61728f' }
-  if (uv < 3) return { label: 'niedrig', color: '#3ddc97' }
-  if (uv < 6) return { label: 'mäßig', color: '#c7e94a' }
-  if (uv < 8) return { label: 'hoch', color: '#ffb454' }
-  if (uv < 11) return { label: 'sehr hoch', color: '#ff7847' }
-  return { label: 'extrem', color: '#c792ea' }
+  if (uv == null) return { label: t('none'), color: '#61728f' }
+  if (uv < 3) return { label: t('uv.low'), color: '#3ddc97' }
+  if (uv < 6) return { label: t('uv.moderate'), color: '#c7e94a' }
+  if (uv < 8) return { label: t('uv.high'), color: '#ffb454' }
+  if (uv < 11) return { label: t('uv.veryHigh'), color: '#ff7847' }
+  return { label: t('uv.extreme'), color: '#c792ea' }
 }
 
 // Europäischer Luftqualitätsindex (EAQI) → Stufe + Farbe
 export function aqiLevel(aqi: number | null | undefined): { label: string; color: string } {
-  if (aqi == null) return { label: '–', color: '#61728f' }
-  if (aqi <= 20) return { label: 'sehr gut', color: '#3ddc97' }
-  if (aqi <= 40) return { label: 'gut', color: '#8fd14f' }
-  if (aqi <= 60) return { label: 'mäßig', color: '#ffb454' }
-  if (aqi <= 80) return { label: 'schlecht', color: '#ff7847' }
-  if (aqi <= 100) return { label: 'sehr schlecht', color: '#ff5d73' }
-  return { label: 'extrem schlecht', color: '#c792ea' }
+  if (aqi == null) return { label: t('none'), color: '#61728f' }
+  if (aqi <= 20) return { label: t('aqi.veryGood'), color: '#3ddc97' }
+  if (aqi <= 40) return { label: t('aqi.good'), color: '#8fd14f' }
+  if (aqi <= 60) return { label: t('aqi.moderate'), color: '#ffb454' }
+  if (aqi <= 80) return { label: t('aqi.bad'), color: '#ff7847' }
+  if (aqi <= 100) return { label: t('aqi.veryBad'), color: '#ff5d73' }
+  return { label: t('aqi.extremeBad'), color: '#c792ea' }
 }
 
 // Pollenkonzentration (Körner/m³) → Belastung
 export function pollenLevel(v: number | null | undefined): { label: string; color: string; frac: number } {
-  if (v == null) return { label: 'keine', color: '#61728f', frac: 0 }
-  if (v < 1) return { label: 'keine', color: '#61728f', frac: 0.05 }
-  if (v < 20) return { label: 'gering', color: '#3ddc97', frac: 0.3 }
-  if (v < 50) return { label: 'mäßig', color: '#ffb454', frac: 0.6 }
-  if (v < 100) return { label: 'hoch', color: '#ff7847', frac: 0.85 }
-  return { label: 'sehr hoch', color: '#ff5d73', frac: 1 }
+  if (v == null) return { label: t('pollenLevel.none'), color: '#61728f', frac: 0 }
+  if (v < 1) return { label: t('pollenLevel.none'), color: '#61728f', frac: 0.05 }
+  if (v < 20) return { label: t('pollenLevel.low'), color: '#3ddc97', frac: 0.3 }
+  if (v < 50) return { label: t('pollenLevel.moderate'), color: '#ffb454', frac: 0.6 }
+  if (v < 100) return { label: t('pollenLevel.high'), color: '#ff7847', frac: 0.85 }
+  return { label: t('pollenLevel.veryHigh'), color: '#ff5d73', frac: 1 }
 }
 
-export const POLLEN_LABELS: Record<string, string> = {
-  alder_pollen: 'Erle',
-  birch_pollen: 'Birke',
-  grass_pollen: 'Gräser',
-  mugwort_pollen: 'Beifuß',
-  olive_pollen: 'Olive',
-  ragweed_pollen: 'Ambrosia',
+// Pollenart-Schlüssel → lokalisierter Name
+export function pollenName(key: string): string {
+  return t(`pollenName.${key}`)
 }
 
 export function fmtTime(iso: string | null | undefined): string {
   if (!iso) return '–'
-  return new Date(iso).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
+  return new Date(iso).toLocaleTimeString(localeTag(), { hour: '2-digit', minute: '2-digit' })
 }
 
 export function fmtDuration(seconds: number | null | undefined): string {

@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
+import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
 import { Star, MapPin, Sunrise, Sunset } from 'lucide-vue-next'
 import { usePlacesStore } from '@/stores/places'
 import { useSkyStore } from '@/stores/sky'
 import { fetchConditions, fetchAirQuality, POLLEN_KEYS } from '@/api/weather'
-import { wmo, fmtTemp, windDir, uvLevel, aqiLevel, pollenLevel, fmtTime, POLLEN_LABELS } from '@/lib/format'
+import { wmo, fmtTemp, windDir, uvLevel, aqiLevel, pollenLevel, fmtTime, pollenName } from '@/lib/format'
 import { wmoIcon } from '@/lib/weatherIcon'
+
+const { t } = useI18n()
 
 const places = usePlacesStore()
 const sky = useSkyStore()
@@ -50,16 +53,16 @@ const stats = computed<Stat[]>(() => {
   const pol = topPollen.value ? pollenLevel(topPollen.value.v) : null
   const sun = daily.value
   return [
-    { label: 'Gefühlt', value: fmtTemp(c.value.apparent_temperature, 0) },
-    { label: 'Luftfeuchte', value: `${Math.round(c.value.relative_humidity_2m)} %` },
-    { label: 'Taupunkt', value: fmtTemp(c.value.dew_point_2m, 0) },
-    { label: 'Wind', value: `${Math.round(c.value.wind_speed_10m)}`, sub: `km/h · Böen ${Math.round(c.value.wind_gusts_10m)} · ${windDir(c.value.wind_direction_10m)}` },
-    { label: 'UV-Index', value: c.value.uv_index?.toFixed(1) ?? '–', sub: uv.label, color: uv.color },
-    { label: 'Druck', value: `${Math.round(c.value.surface_pressure)}`, sub: 'hPa' },
-    { label: 'Bewölkung', value: `${Math.round(c.value.cloud_cover)} %` },
-    { label: 'Luftqualität', value: aqi.value.value != null ? String(Math.round(aqi.value.value)) : '–', sub: aqi.value.label, color: aqi.value.color },
-    ...(pol && topPollen.value ? [{ label: 'Pollen', value: POLLEN_LABELS[topPollen.value.key], sub: pol.label, color: pol.color }] : []),
-    ...(sun ? [{ label: 'Sonne', value: fmtTime(sun.sunrise?.[0] as string), sub: `bis ${fmtTime(sun.sunset?.[0] as string)}` }] : []),
+    { label: t('hero.feels'), value: fmtTemp(c.value.apparent_temperature, 0) },
+    { label: t('hero.humidity'), value: `${Math.round(c.value.relative_humidity_2m)} %` },
+    { label: t('hero.dewPoint'), value: fmtTemp(c.value.dew_point_2m, 0) },
+    { label: t('hero.wind'), value: `${Math.round(c.value.wind_speed_10m)}`, sub: `km/h · ${t('hero.gusts')} ${Math.round(c.value.wind_gusts_10m)} · ${windDir(c.value.wind_direction_10m)}` },
+    { label: t('hero.uvIndex'), value: c.value.uv_index?.toFixed(1) ?? '–', sub: uv.label, color: uv.color },
+    { label: t('hero.pressure'), value: `${Math.round(c.value.surface_pressure)}`, sub: 'hPa' },
+    { label: t('hero.cloud'), value: `${Math.round(c.value.cloud_cover)} %` },
+    { label: t('hero.airQuality'), value: aqi.value.value != null ? String(Math.round(aqi.value.value)) : '–', sub: aqi.value.label, color: aqi.value.color },
+    ...(pol && topPollen.value ? [{ label: t('hero.pollen'), value: pollenName(topPollen.value.key), sub: pol.label, color: pol.color }] : []),
+    ...(sun ? [{ label: t('hero.sun'), value: fmtTime(sun.sunrise?.[0] as string), sub: `${t('hero.until')} ${fmtTime(sun.sunset?.[0] as string)}` }] : []),
   ]
 })
 </script>
@@ -91,7 +94,7 @@ const stats = computed<Stat[]>(() => {
       <div class="pb-3">
         <component :is="skyIcon" :size="34" class="text-primary" :stroke-width="1.5" />
         <div class="mt-1 text-[16px] font-semibold leading-tight">{{ skyText }}</div>
-        <div class="text-[13px] text-muted-foreground">gefühlt {{ fmtTemp(c?.apparent_temperature, 0) }}</div>
+        <div class="text-[13px] text-muted-foreground">{{ $t('hero.feltShort') }} {{ fmtTemp(c?.apparent_temperature, 0) }}</div>
       </div>
     </div>
 

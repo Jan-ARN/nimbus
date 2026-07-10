@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
+import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
 import { TrendingUp, TrendingDown, MoveRight, Info, ArrowUp, ArrowDown, Equal } from 'lucide-vue-next'
 import PlaceSelector from '@/components/PlaceSelector.vue'
@@ -8,6 +9,9 @@ import BandChart from '@/components/BandChart.vue'
 import { usePlacesStore } from '@/stores/places'
 import { fetchEnsemble } from '@/api/weather'
 import { aggregateEnsemble } from '@/lib/series'
+import { localeTag } from '@/i18n'
+
+const { t } = useI18n()
 
 const places = usePlacesStore()
 const { active } = storeToRefs(places)
@@ -62,10 +66,10 @@ const dayCells = computed(() => {
 })
 
 const trendText = computed(() => {
-  if (!trend.value) return 'Tendenz wird geladen…'
-  if (trend.value.dir === 'up') return 'Tendenz: es wird wärmer'
-  if (trend.value.dir === 'down') return 'Tendenz: es wird kühler'
-  return 'Tendenz: relativ stabil'
+  if (!trend.value) return t('longRange.trendLoading')
+  if (trend.value.dir === 'up') return t('longRange.trendWarmer')
+  if (trend.value.dir === 'down') return t('longRange.trendCooler')
+  return t('longRange.trendStable')
 })
 const TrendIcon = computed(() => {
   if (!trend.value) return MoveRight
@@ -88,14 +92,14 @@ function cellIconColor(a: number) {
   return a >= 0.5 ? 'var(--hot)' : a <= -0.5 ? 'var(--cool)' : 'var(--muted-foreground)'
 }
 function fmtCellDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })
+  return new Date(iso).toLocaleDateString(localeTag(), { day: '2-digit', month: '2-digit' })
 }
 </script>
 
 <template>
   <div class="flex flex-col gap-6">
     <section class="glass reveal p-5">
-      <div class="label mb-2">Ort</div>
+      <div class="label mb-2">{{ $t('place.label') }}</div>
       <PlaceSelector />
     </section>
 
@@ -108,36 +112,35 @@ function fmtCellDate(iso: string): string {
         <component :is="TrendIcon" :size="38" :style="{ color: trendColor }" />
       </div>
       <div>
-        <div class="label">{{ active.name }} · nächste {{ days.length }} Tage</div>
+        <div class="label">{{ active.name }} · {{ $t('longRange.nextDays', { n: days.length }) }}</div>
         <h1 class="font-display font-semibold tracking-tight" style="font-size: clamp(26px, 4vw, 38px); line-height: 1.05">
           {{ trendText }}
         </h1>
         <div v-if="trend" class="text-[13px] text-muted-foreground">
-          Höchstwerte {{ trend.totalChange >= 0 ? '+' : '' }}{{ trend.totalChange.toFixed(1) }}° gegenüber heute · Median aus 31 Wettersimulationen
+          {{ $t('longRange.highsVsToday', { change: (trend.totalChange >= 0 ? '+' : '') + trend.totalChange.toFixed(1) }) }}
         </div>
       </div>
     </section>
 
     <div class="flex items-start gap-2 rounded-md border border-border bg-[color-mix(in_srgb,var(--cool)_8%,transparent)] px-4 py-3 text-[13px] text-muted-foreground">
       <Info :size="15" class="mt-0.5 shrink-0" />
-      <span>
-        So weit im Voraus geht's um die <strong class="text-foreground">Richtung</strong>, nicht um genaue
-        Grade. Ab etwa 16 Tagen wird die Vorhersage richtig unsicher.
-      </span>
+      <i18n-t keypath="longRange.infoText" tag="span" scope="global">
+        <template #dir><strong class="text-foreground">{{ $t('longRange.infoDir') }}</strong></template>
+      </i18n-t>
     </div>
 
     <!-- Band-Chart -->
     <section class="glass reveal p-5">
-      <h2 class="font-display text-[22px] font-semibold">Höchstwerte-Ausblick</h2>
-      <div class="label mb-4">Erwartete Tages-Höchsttemperatur · das Band zeigt, wie sicher — je breiter, desto unsicherer</div>
+      <h2 class="font-display text-[22px] font-semibold">{{ $t('longRange.highsOutlook') }}</h2>
+      <div class="label mb-4">{{ $t('longRange.highsOutlookSub') }}</div>
       <BandChart v-if="days.length" :days="days" :baseline="baseline" :reliable-until="reliableUntil" />
-      <div v-else class="grid h-52 place-items-center font-mono text-[13px] text-muted-foreground">lädt Ensemble…</div>
+      <div v-else class="grid h-52 place-items-center font-mono text-[13px] text-muted-foreground">{{ $t('longRange.loadingEnsemble') }}</div>
     </section>
 
     <!-- Trend-Kacheln -->
     <section class="glass reveal p-5">
-      <h2 class="font-display text-[22px] font-semibold">Wärmer oder kälter als heute?</h2>
-      <div class="label mb-4">Verglichen mit heute ({{ baseline?.toFixed(0) }}° erwarteter Höchstwert) — wärmer = rot, kühler = blau</div>
+      <h2 class="font-display text-[22px] font-semibold">{{ $t('longRange.warmerColder') }}</h2>
+      <div class="label mb-4">{{ $t('longRange.comparedToToday', { base: baseline?.toFixed(0) }) }}</div>
       <div class="grid grid-cols-[repeat(auto-fill,minmax(80px,1fr))] gap-2">
         <div
           v-for="c in dayCells"
