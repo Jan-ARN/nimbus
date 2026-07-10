@@ -1,11 +1,11 @@
 <!-- ===== HERO (custom SVG — assets/banner.svg) — a dusk sky, the ensemble fanning out from "now" ===== -->
-<img width="100%" src="https://raw.githubusercontent.com/Jan-ARN/nimbus/main/assets/banner.svg" alt="Nimbus — the sky over Cologne"/>
+<img width="100%" src="https://raw.githubusercontent.com/Jan-ARN/nimbus/main/assets/banner.svg?v=2" alt="Nimbus — the sky over Cologne"/>
 
 <div align="center">
 
-### Many weather models, one living sky.
+### Multi-model weather for Cologne.
 
-A small weather app for Cologne that **compares several forecast models** and whose entire UI **adapts to the actual conditions** — the background *is* the forecast: the 31 ensemble runs fan out as a living bundle across the screen, hot day → amber, clear night → stars, rain → drops, thunderstorm → lightning.
+Compares several forecast models and reacts to the actual conditions — the background *is* the forecast: the 31 ensemble runs fan out across the screen, hot day → amber, clear night → stars, rain → drops, thunderstorm → lightning.
 
 <br/>
 
@@ -18,19 +18,17 @@ A small weather app for Cologne that **compares several forecast models** and wh
 
 </div>
 
-> A little hobby project — born because the summer was brutal and the weather apps kept contradicting each other. Not a product, just built to see the sky honestly.
-
 ## What's inside
 
 - **Models** — current conditions (feels-like, wind, UV, air, pollen, sun) plus a comparison of the individual models (ICON, ECMWF, GFS, …) and an expandable 16-day outlook.
 - **Long range** — out to ~35 days from the GEFS ensemble: median high + spread band (the wider, the more uncertain) and the trend "warmer/colder than today".
 - **Air** — air quality (EAQI + pollutants) and pollen.
-- **Living sky** — the ensemble field in the background and the color palette follow the real conditions of the active location. DWD severe-weather warnings (Bright Sky) appear as a banner.
+- **Weather-reactive UI** — the ensemble field in the background and the color palette follow the real conditions of the active location. DWD severe-weather warnings (Bright Sky) appear as a banner.
 - **Two languages** — English and German, toggled from the header and remembered in your browser.
 
 ## A little meteorology
 
-Beyond ~7–10 days there is no precise single number. So Nimbus shows the **median of 31 simulations** plus a spread band instead of faking a sharp degree figure — reliable up close, honestly uncertain further out.
+Beyond ~7–10 days there is no precise single number. So Nimbus shows the **median of 31 simulations** plus a spread band instead of a sharp degree figure — reliable up close, uncertain further out.
 
 ## Stack
 
@@ -49,7 +47,7 @@ npm run build      # → dist/  (typecheck + static build)
 
 Deploy to GitHub Pages happens automatically on every push to `main` (see `.github/workflows/deploy.yml`).
 
-<div align="center"><br/><sub>MIT · built with ☕ and too much sun over Cologne</sub></div>
+<div align="center"><br/><sub>MIT License · Cologne</sub></div>
 
-<!-- ===== FOOTER (custom SVG — assets/footer.svg) — the ensemble converging at dusk, the creed ===== -->
-<img width="100%" src="https://raw.githubusercontent.com/Jan-ARN/nimbus/main/assets/footer.svg" alt="certain up close, honest far out — the sky is a spread, never a single number"/>
+<!-- ===== FOOTER (custom SVG — assets/footer.svg) — the ensemble fanning out at dusk, the creed ===== -->
+<img width="100%" src="https://raw.githubusercontent.com/Jan-ARN/nimbus/main/assets/footer.svg?v=2" alt="a forecast is a range, not a number — median and spread from 31 simulations"/>
