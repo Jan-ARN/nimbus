@@ -1,0 +1,61 @@
+<svg width="1200" height="300" viewBox="0 0 1200 300" fill="none" xmlns="http://www.w3.org/2000/svg" font-family="'Helvetica Neue',Arial,sans-serif">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0d1a2b"/>
+      <stop offset="0.55" stop-color="#162936"/>
+      <stop offset="1" stop-color="#243f52"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#f0c880" stop-opacity="0.9"/>
+      <stop offset="0.5" stop-color="#f0c880" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#f0c880" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="horizonglow" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#456a82" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#456a82" stop-opacity="0"/>
+    </linearGradient>
+    <clipPath id="frame"><rect width="1200" height="300" rx="0"/></clipPath>
+  </defs>
+
+  <g clip-path="url(#frame)">
+    <rect width="1200" height="300" fill="url(#sky)"/>
+    <rect y="150" width="1200" height="150" fill="url(#horizonglow)"/>
+
+    <!-- Ensemble-Feld: Prognose-Bahnen, die nach rechts auffächern -->
+    <g stroke="#7fa9d0" stroke-width="1.4" fill="none" opacity="0.5">
+      <path d="M120 168 C400 150 640 128 1200 96"/>
+      <path d="M120 168 C400 156 640 150 1200 140"/>
+      <path d="M120 168 C400 162 640 168 1200 176"/>
+      <path d="M120 168 C400 170 640 190 1200 214"/>
+      <path d="M120 168 C400 176 640 210 1200 250"/>
+    </g>
+    <g stroke="#f0c880" stroke-width="1.6" fill="none" opacity="0.85">
+      <path d="M120 168 C400 158 640 146 1200 128"/>
+      <path d="M120 168 C400 166 640 178 1200 196"/>
+    </g>
+    <!-- „Jetzt"-Knoten + Median-Bahn -->
+    <path d="M120 168 C400 162 640 158 1200 162" stroke="#eaf2ff" stroke-width="2" fill="none" opacity="0.9"/>
+    <circle cx="120" cy="168" r="4.5" fill="#eaf2ff"/>
+
+    <!-- Sonne am Horizont -->
+    <circle cx="905" cy="150" r="120" fill="url(#glow)"/>
+    <circle cx="905" cy="150" r="26" fill="#f0c880"/>
+
+    <!-- Wortmarke -->
+    <g transform="translate(88,110)">
+      <!-- Instrument-Marke -->
+      <g transform="translate(0,-24)" stroke="#f0c880" fill="none">
+        <circle cx="24" cy="24" r="20.5" stroke-width="2" opacity="0.55"/>
+        <path d="M7 29 H41" stroke-width="2.4" stroke-linecap="round"/>
+        <circle cx="24" cy="29" r="6.4" fill="#f0c880" stroke="none"/>
+        <g stroke-width="2.4" stroke-linecap="round">
+          <path d="M24 17.5 V13.5"/><path d="M15.4 20.5 L12.9 18"/><path d="M32.6 20.5 L35.1 18"/>
+        </g>
+      </g>
+      <text x="64" y="16" fill="#f7fafe" font-size="58" font-weight="700" letter-spacing="-1.5">Nimbus</text>
+      <text x="66" y="52" fill="#93a8c2" font-size="17" font-weight="500" letter-spacing="5" style="text-transform:uppercase">Der Himmel über Köln</text>
+    </g>
+
+    <text x="88" y="250" fill="#5f7590" font-size="15" font-weight="500">Viele Wettermodelle · ein lebendiger Himmel · nur zum Spaß gebaut</text>
+  </g>
+</svg>

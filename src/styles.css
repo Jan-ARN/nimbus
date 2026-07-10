@@ -1,0 +1,218 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --radius: 16px;
+
+    /* Basis (Fallback = bewölkt/dunkel) */
+    --background: #0a0f1a;
+    --foreground: #eef2fa;
+    --card: rgba(13, 19, 33, 0.55);
+    --card-foreground: #eef2fa;
+    --muted: rgba(255, 255, 255, 0.06);
+    --muted-foreground: #93a4c2;
+    --border: rgba(147, 168, 205, 0.16);
+    --input: rgba(147, 168, 205, 0.2);
+    --ring: var(--primary);
+    --primary: #6ea8ff;
+    --primary-foreground: #06101f;
+    --secondary: rgba(255, 255, 255, 0.08);
+    --secondary-foreground: #e9eef8;
+    --accent: rgba(255, 255, 255, 0.08);
+    --accent-foreground: #e9eef8;
+    --destructive: #ff5d73;
+    --destructive-foreground: #fff;
+
+    /* Wetter-Semantik (konstant) */
+    --hot: #ff7a4d;
+    --cool: #46b6ff;
+    --good: #3ddc97;
+    --warn: #ffb454;
+    --bad: #ff5d73;
+
+    /* Himmel-Verlauf + Atmosphäre */
+    --sky-1: #16233d;
+    --sky-2: #0d1526;
+    --sky-3: #070c16;
+    --sky-glow: rgba(110, 168, 255, 0.35);
+    --star-opacity: 0;
+    --shimmer-opacity: 0;
+  }
+
+  /* ☀ Heißer, dunstiger Tag */
+  [data-sky='hot'] {
+    --background: #140d09;
+    --primary: #ff8a3d;
+    --primary-foreground: #1a0d05;
+    --muted-foreground: #c9a888;
+    --border: rgba(255, 170, 110, 0.18);
+    --sky-1: #ff9d47;
+    --sky-2: #c85a2c;
+    --sky-3: #1c0f08;
+    --sky-glow: rgba(255, 180, 90, 0.6);
+    --shimmer-opacity: 0.35;
+  }
+
+  /* Klarer, milder Tag */
+  [data-sky='clear-day'] {
+    --background: #071324;
+    --primary: #4aa8ff;
+    --primary-foreground: #04101f;
+    --sky-1: #7ec8ff;
+    --sky-2: #2f7ad1;
+    --sky-3: #071324;
+    --sky-glow: rgba(126, 200, 255, 0.6);
+  }
+
+  /* Klare Nacht */
+  [data-sky='clear-night'] {
+    --background: #05070f;
+    --primary: #9db8ff;
+    --primary-foreground: #05070f;
+    --muted-foreground: #7f8bb0;
+    --sky-1: #1a2450;
+    --sky-2: #0a0f24;
+    --sky-3: #03040a;
+    --sky-glow: rgba(157, 184, 255, 0.4);
+    --star-opacity: 1;
+  }
+
+  /* Bewölkt */
+  [data-sky='clouds'] {
+    --background: #0c111c;
+    --primary: #8fb0e0;
+    --sky-1: #3a475e;
+    --sky-2: #232d40;
+    --sky-3: #0c111c;
+    --sky-glow: rgba(143, 176, 224, 0.3);
+  }
+
+  /* Nebel */
+  [data-sky='fog'] {
+    --background: #10141b;
+    --primary: #b9c4d4;
+    --muted-foreground: #9aa6b6;
+    --sky-1: #6b7686;
+    --sky-2: #444d5c;
+    --sky-3: #10141b;
+    --sky-glow: rgba(185, 196, 212, 0.25);
+  }
+
+  /* Regen */
+  [data-sky='rain'] {
+    --background: #070f16;
+    --primary: #4fd0e0;
+    --primary-foreground: #041014;
+    --sky-1: #2a4152;
+    --sky-2: #162833;
+    --sky-3: #070f16;
+    --sky-glow: rgba(79, 208, 224, 0.35);
+  }
+
+  /* Gewitter */
+  [data-sky='storm'] {
+    --background: #0a0812;
+    --primary: #c9a6ff;
+    --primary-foreground: #0a0812;
+    --sky-1: #2c2447;
+    --sky-2: #171526;
+    --sky-3: #060510;
+    --sky-glow: rgba(201, 166, 255, 0.4);
+  }
+
+  /* Schnee */
+  [data-sky='snow'] {
+    --background: #0b1220;
+    --primary: #8fe6ff;
+    --primary-foreground: #04121a;
+    --sky-1: #9fb6cf;
+    --sky-2: #4d6480;
+    --sky-3: #0b1220;
+    --sky-glow: rgba(143, 230, 255, 0.4);
+  }
+
+  * {
+    border-color: var(--border);
+  }
+  html,
+  body,
+  #app {
+    height: 100%;
+    margin: 0;
+  }
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans, 'Hanken Grotesk', system-ui, sans-serif);
+    -webkit-font-smoothing: antialiased;
+    transition: background 1.2s ease;
+  }
+}
+
+@layer components {
+  /* Instrument-Label: Mono-Caps mit Sperrung */
+  .label {
+    @apply font-mono uppercase tracking-[0.16em] text-[10.5px] font-medium text-muted-foreground;
+  }
+  .readout {
+    font-family: 'Bricolage Grotesque', 'Hanken Grotesk', sans-serif;
+    font-weight: 600;
+    line-height: 0.92;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+  /* Glas-Karte über dem Himmel */
+  .glass {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    backdrop-filter: blur(22px) saturate(1.2);
+    -webkit-backdrop-filter: blur(22px) saturate(1.2);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.06),
+      0 24px 60px -34px rgba(0, 0, 0, 0.9);
+  }
+  .grid-texture {
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 46px 46px;
+  }
+}
+
+/* Scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(147, 168, 205, 0.3) transparent;
+}
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(147, 168, 205, 0.25);
+  border-radius: 6px;
+}
+
+.reveal {
+  animation: rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  body {
+    animation: none;
+    transition: none;
+  }
+}

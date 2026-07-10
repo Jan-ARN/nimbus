@@ -1,0 +1,155 @@
+<script setup lang="ts">
+import { computed } from 'vue'
+import { useQuery } from '@tanstack/vue-query'
+import { storeToRefs } from 'pinia'
+import { TrendingUp, TrendingDown, MoveRight, Info, ArrowUp, ArrowDown, Equal } from 'lucide-vue-next'
+import PlaceSelector from '@/components/PlaceSelector.vue'
+import BandChart from '@/components/BandChart.vue'
+import { usePlacesStore } from '@/stores/places'
+import { fetchEnsemble } from '@/api/weather'
+import { aggregateEnsemble } from '@/lib/series'
+
+const places = usePlacesStore()
+const { active } = storeToRefs(places)
+
+const RELIABLE_DAYS = 16
+
+const query = useQuery({
+  queryKey: computed(() => ['ensemble', active.value.id]),
+  queryFn: () => fetchEnsemble(active.value, 35),
+})
+
+const days = computed(() => (query.data.value ? aggregateEnsemble(query.data.value) : []))
+
+// „Heute" = der heutige erwartete Höchstwert (erster Tag, Median), NICHT ein
+// Mehrtages-Mittel — sonst sind alle Abweichungen systematisch zu klein.
+const baseline = computed(() => days.value[0]?.median)
+
+const trend = computed(() => {
+  const d = days.value
+  if (d.length < 4) return null
+  const n = d.length
+  const xs = d.map((_, i) => i)
+  const ys = d.map((x) => x.median)
+  const mx = xs.reduce((s, v) => s + v, 0) / n
+  const my = ys.reduce((s, v) => s + v, 0) / n
+  let num = 0
+  let den = 0
+  for (let i = 0; i < n; i++) {
+    num += (xs[i] - mx) * (ys[i] - my)
+    den += (xs[i] - mx) ** 2
+  }
+  const slopePerDay = den ? num / den : 0
+  const totalChange = slopePerDay * (n - 1)
+  let dir: 'up' | 'down' | 'flat' = 'flat'
+  if (totalChange > 1.5) dir = 'up'
+  else if (totalChange < -1.5) dir = 'down'
+  return { slopePerDay, totalChange, dir }
+})
+
+const reliableUntil = computed(() => {
+  const idx = days.value.findIndex(
+    (d) => (Date.now() - new Date(d.date).getTime()) / 86_400_000 < -RELIABLE_DAYS,
+  )
+  return idx === -1 ? days.value.length : idx
+})
+
+// Jeden Tag zeigen (früher jeder 3. → der heißeste Tag konnte übersprungen
+// werden). Abweichung des Median-Höchstwerts gegenüber heute.
+const dayCells = computed(() => {
+  if (baseline.value == null) return []
+  return days.value.map((d) => ({ date: d.date, anomaly: d.median - baseline.value! }))
+})
+
+const trendText = computed(() => {
+  if (!trend.value) return 'Tendenz wird geladen…'
+  if (trend.value.dir === 'up') return 'Tendenz: es wird wärmer'
+  if (trend.value.dir === 'down') return 'Tendenz: es wird kühler'
+  return 'Tendenz: relativ stabil'
+})
+const TrendIcon = computed(() => {
+  if (!trend.value) return MoveRight
+  return trend.value.dir === 'up' ? TrendingUp : trend.value.dir === 'down' ? TrendingDown : MoveRight
+})
+const trendColor = computed(() => {
+  if (!trend.value || trend.value.dir === 'flat') return 'var(--muted-foreground)'
+  return trend.value.dir === 'up' ? 'var(--hot)' : 'var(--cool)'
+})
+
+function anomalyColor(a: number): string {
+  const t = Math.max(-6, Math.min(6, a)) / 6
+  if (t >= 0) return `rgba(255,120,71,${0.22 + t * 0.6})`
+  return `rgba(74,168,255,${0.22 + -t * 0.6})`
+}
+function cellIcon(a: number) {
+  return a >= 0.5 ? ArrowUp : a <= -0.5 ? ArrowDown : Equal
+}
+function cellIconColor(a: number) {
+  return a >= 0.5 ? 'var(--hot)' : a <= -0.5 ? 'var(--cool)' : 'var(--muted-foreground)'
+}
+function fmtCellDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })
+}
+</script>
+
+<template>
+  <div class="flex flex-col gap-6">
+    <section class="glass reveal p-5">
+      <div class="label mb-2">Ort</div>
+      <PlaceSelector />
+    </section>
+
+    <!-- Tendenz-Headline -->
+    <section class="glass grid-texture reveal flex items-center gap-6 p-6">
+      <div
+        class="grid h-[76px] w-[76px] shrink-0 place-items-center rounded-2xl border"
+        :style="{ borderColor: trendColor, background: `color-mix(in srgb, ${trendColor} 16%, transparent)` }"
+      >
+        <component :is="TrendIcon" :size="38" :style="{ color: trendColor }" />
+      </div>
+      <div>
+        <div class="label">{{ active.name }} · nächste {{ days.length }} Tage</div>
+        <h1 class="font-display font-semibold tracking-tight" style="font-size: clamp(26px, 4vw, 38px); line-height: 1.05">
+          {{ trendText }}
+        </h1>
+        <div v-if="trend" class="text-[13px] text-muted-foreground">
+          Höchstwerte {{ trend.totalChange >= 0 ? '+' : '' }}{{ trend.totalChange.toFixed(1) }}° gegenüber heute · Median aus 31 Wettersimulationen
+        </div>
+      </div>
+    </section>
+
+    <div class="flex items-start gap-2 rounded-md border border-border bg-[color-mix(in_srgb,var(--cool)_8%,transparent)] px-4 py-3 text-[13px] text-muted-foreground">
+      <Info :size="15" class="mt-0.5 shrink-0" />
+      <span>
+        So weit im Voraus geht's um die <strong class="text-foreground">Richtung</strong>, nicht um genaue
+        Grade. Ab etwa 16 Tagen wird die Vorhersage richtig unsicher.
+      </span>
+    </div>
+
+    <!-- Band-Chart -->
+    <section class="glass reveal p-5">
+      <h2 class="font-display text-[22px] font-semibold">Höchstwerte-Ausblick</h2>
+      <div class="label mb-4">Erwartete Tages-Höchsttemperatur · das Band zeigt, wie sicher — je breiter, desto unsicherer</div>
+      <BandChart v-if="days.length" :days="days" :baseline="baseline" :reliable-until="reliableUntil" />
+      <div v-else class="grid h-52 place-items-center font-mono text-[13px] text-muted-foreground">lädt Ensemble…</div>
+    </section>
+
+    <!-- Trend-Kacheln -->
+    <section class="glass reveal p-5">
+      <h2 class="font-display text-[22px] font-semibold">Wärmer oder kälter als heute?</h2>
+      <div class="label mb-4">Verglichen mit heute ({{ baseline?.toFixed(0) }}° erwarteter Höchstwert) — wärmer = rot, kühler = blau</div>
+      <div class="grid grid-cols-[repeat(auto-fill,minmax(80px,1fr))] gap-2">
+        <div
+          v-for="c in dayCells"
+          :key="c.date"
+          class="rounded-lg border px-1.5 py-3 text-center"
+          :style="{ background: anomalyColor(c.anomaly), borderColor: anomalyColor(c.anomaly) }"
+        >
+          <div class="font-mono text-[11px] opacity-90">{{ fmtCellDate(c.date) }}</div>
+          <div class="readout my-1 text-xl">{{ c.anomaly >= 0 ? '+' : '' }}{{ c.anomaly.toFixed(1) }}°</div>
+          <component :is="cellIcon(c.anomaly)" :size="16" class="mx-auto" :style="{ color: cellIconColor(c.anomaly) }" />
+        </div>
+      </div>
+    </section>
+  </div>
+</template>
