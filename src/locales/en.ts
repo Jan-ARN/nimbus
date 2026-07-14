@@ -97,7 +97,10 @@ export default {
     dailySub: "each day's actual {metric}, and how the {n}-day-ahead forecast missed",
     legend: 'Number = actual {metric}. Red = forecast was too warm, blue = too cool.',
     correctedTitle: 'Self-correction',
-    correctedSub: 'subtract the measured bias — using only forecasts already verifiable when each was issued',
+    correctedSub: "removing each model's habitual lean — measured, not guessed",
+    correctedInfoTerm: 'Bias correction',
+    correctedInfo:
+      'A forecast model tends to lean the same way at a given place — a touch too warm or too cool. {term} measures that lean from past forecasts and subtracts it, using only forecasts already checked against reality when each one was issued — a genuine correction, not hindsight.',
     correctedLine: 'Bias-corrected',
     correctedResultBetter: 'Correcting the measured bias cuts the typical error from ±{raw}° to ±{corr}° — {pct}% better over {n} days.',
     correctedResultFlat: 'No systematic bias to exploit here: correction leaves the ±{raw}° error essentially unchanged (±{corr}°) over {n} days.',

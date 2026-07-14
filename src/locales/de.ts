@@ -97,7 +97,10 @@ export default {
     dailySub: 'Tages-{metric} und wie die Prognose {n} Tage vorher danebenlag',
     legend: 'Zahl = beobachteter {metric}. Rot = Prognose war zu warm, Blau = zu kühl.',
     correctedTitle: 'Selbst-Korrektur',
-    correctedSub: 'die gemessene systematische Abweichung abziehen — nur mit Prognosen, die bei Ausgabe schon prüfbar waren',
+    correctedSub: 'die typische Modell-Neigung herausgerechnet — gemessen, nicht geschätzt',
+    correctedInfoTerm: 'Die Bias-Korrektur',
+    correctedInfo:
+      'Ein Vorhersagemodell neigt an einem Ort oft in dieselbe Richtung — etwas zu warm oder zu kühl. {term} misst diese Neigung aus früheren Prognosen und zieht sie ab — nur mit Prognosen, die bei Ausgabe schon an der Realität geprüft waren. Eine echte Korrektur, kein Rückblick-Vorteil.',
     correctedLine: 'Bias-korrigiert',
     correctedResultBetter: 'Zieht man den gemessenen Bias ab, sinkt der typische Fehler von ±{raw}° auf ±{corr}° — {pct}% besser über {n} Tage.',
     correctedResultFlat: 'Keine systematische Abweichung nutzbar: Die Korrektur lässt den Fehler von ±{raw}° praktisch unverändert (±{corr}°) über {n} Tage.',

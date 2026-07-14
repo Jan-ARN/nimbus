@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useQuery, keepPreviousData } from '@tanstack/vue-query'
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
-import { Target, ArrowUp, ArrowDown, Equal } from 'lucide-vue-next'
+import { Target, ArrowUp, ArrowDown, Equal, Info } from 'lucide-vue-next'
 import MultiLineChart from '@/components/MultiLineChart.vue'
 import Spinner from '@/components/ui/Spinner.vue'
 import type { LineSeries } from '@/lib/chartTypes'
@@ -260,7 +260,13 @@ const loading = computed(() => !rows.value.length)
     <!-- Selbst-Korrektur: den gemessenen Bias herausrechnen (kausal, ehrlich) -->
     <section class="glass reveal p-5">
       <h2 class="font-display text-[22px] font-semibold">{{ $t('history.correctedTitle') }}</h2>
-      <div class="label mb-4">{{ $t('history.correctedSub') }}</div>
+      <div class="label mb-3">{{ $t('history.correctedSub') }}</div>
+      <div class="mb-5 flex items-start gap-2 rounded-md border border-border bg-[color-mix(in_srgb,var(--cool)_8%,transparent)] px-4 py-3 text-[13px] text-muted-foreground">
+        <Info :size="15" class="mt-0.5 shrink-0" />
+        <i18n-t keypath="history.correctedInfo" tag="span" scope="global">
+          <template #term><strong class="text-foreground">{{ $t('history.correctedInfoTerm') }}</strong></template>
+        </i18n-t>
+      </div>
       <template v-if="correction">
         <div class="flex flex-wrap items-end gap-x-8 gap-y-3">
           <div>
