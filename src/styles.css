@@ -163,13 +163,13 @@
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.02em;
   }
-  /* Glas-Karte über dem Himmel */
+  /* Karte über dem Himmel. KEIN backdrop-filter: das Blur über dem animierten
+     Himmel-Canvas musste bei jedem Scroll-Frame neu berechnet werden → 10-fps-
+     Ruckeln. Stattdessen ein ausreichend deckender Grund (folgt dem Theme). */
   .glass {
-    background: var(--card);
+    background: color-mix(in srgb, var(--background) 86%, transparent);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    backdrop-filter: blur(22px) saturate(1.2);
-    -webkit-backdrop-filter: blur(22px) saturate(1.2);
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.06),
       0 24px 60px -34px rgba(0, 0, 0, 0.9);
@@ -196,7 +196,7 @@
   border-radius: 6px;
 }
 
-/* Sanftes Überblenden Skeleton → Inhalt (getrennt vom Router-„fade" in App.vue).
+/* Sanftes Überblenden Spinner → Inhalt (getrennt vom Router-„fade" in App.vue).
    Läuft NACH dem einmaligen .reveal der Karte, also keine doppelte Bewegung. */
 .sk-fade-enter-active,
 .sk-fade-leave-active {

@@ -5,8 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
 import { Target, ArrowUp, ArrowDown, Equal } from 'lucide-vue-next'
 import MultiLineChart from '@/components/MultiLineChart.vue'
-import ChartSkeleton from '@/components/ui/ChartSkeleton.vue'
-import Skeleton from '@/components/ui/Skeleton.vue'
+import Spinner from '@/components/ui/Spinner.vue'
 import type { LineSeries } from '@/lib/chartTypes'
 import { usePlacesStore } from '@/stores/places'
 import { fetchArchive, fetchForecastRuns, LEAD_DAYS } from '@/api/weather'
@@ -148,7 +147,7 @@ const loading = computed(() => !rows.value.length)
             {{ $t('history.leadSummary', { metric: metricWord, n: lead, days: skill.n }) }} · {{ biasText }}
           </div>
         </template>
-        <Skeleton v-else class="mt-1 h-8 w-56" />
+        <Spinner v-else :size="22" class="mt-2" />
       </div>
     </section>
 
@@ -210,7 +209,7 @@ const loading = computed(() => !rows.value.length)
       </div>
       <transition name="sk-fade" mode="out-in">
         <MultiLineChart v-if="chart" :time="chart.time" :series="chart.series" unit="°" />
-        <ChartSkeleton v-else />
+        <div v-else class="grid h-[230px] place-items-center sm:h-[290px] lg:h-[340px]"><Spinner /></div>
       </transition>
     </section>
 
@@ -218,13 +217,10 @@ const loading = computed(() => !rows.value.length)
     <section class="glass reveal p-5">
       <h2 class="font-display text-[22px] font-semibold">{{ $t('history.dailyTitle') }}</h2>
       <div class="label mb-4">{{ $t('history.dailySub', { metric: metricWord, n: lead }) }}</div>
-      <div class="grid grid-cols-[repeat(auto-fill,minmax(78px,1fr))] gap-2">
-        <template v-if="loading">
-          <Skeleton v-for="i in 14" :key="'sk' + i" class="h-[86px]" />
-        </template>
+      <div v-if="loading" class="grid h-[200px] place-items-center"><Spinner /></div>
+      <div v-else class="grid grid-cols-[repeat(auto-fill,minmax(78px,1fr))] gap-2">
         <div
           v-for="r in rows"
-          v-else
           :key="r.date"
           class="rounded-lg border px-1.5 py-2.5 text-center"
           :style="r.error != null ? { background: errColor(r.error), borderColor: errColor(r.error) } : { borderColor: 'var(--border)' }"

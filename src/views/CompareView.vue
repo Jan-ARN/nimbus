@@ -4,8 +4,7 @@ import { useQuery, keepPreviousData } from '@tanstack/vue-query'
 import { storeToRefs } from 'pinia'
 import { Droplet, ChevronDown } from 'lucide-vue-next'
 import ConditionsHero from '@/components/ConditionsHero.vue'
-import Skeleton from '@/components/ui/Skeleton.vue'
-import ChartSkeleton from '@/components/ui/ChartSkeleton.vue'
+import Spinner from '@/components/ui/Spinner.vue'
 import MultiLineChart from '@/components/MultiLineChart.vue'
 import type { LineSeries } from '@/lib/chartTypes'
 import { usePlacesStore } from '@/stores/places'
@@ -162,7 +161,7 @@ function disagreeColor(d: number) {
           unit="°"
           :now-iso="hourly?.time[nowIdx]"
         />
-        <ChartSkeleton v-else />
+        <div v-else class="grid h-[230px] place-items-center sm:h-[290px] lg:h-[340px]"><Spinner /></div>
       </transition>
     </section>
 
@@ -172,18 +171,7 @@ function disagreeColor(d: number) {
       <div class="label mb-4">{{ $t('compare.outlookSub') }}</div>
 
       <div class="flex flex-col">
-        <template v-if="!dailyRows.length">
-          <div
-            v-for="i in 8"
-            :key="i"
-            class="flex items-center gap-3 border-b border-border px-1 py-3 last:border-0"
-          >
-            <Skeleton class="h-4 w-20" />
-            <Skeleton class="h-5 w-5 rounded-full" />
-            <span class="flex-1" />
-            <Skeleton class="h-5 w-24" />
-          </div>
-        </template>
+        <div v-if="!dailyRows.length" class="grid h-[320px] place-items-center"><Spinner /></div>
         <div v-for="row in dailyRows" :key="row.day" class="border-b border-border last:border-0">
           <button
             class="flex w-full items-center gap-3 rounded-md px-1 py-3 text-left transition-colors hover:bg-muted"

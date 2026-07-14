@@ -4,7 +4,7 @@ import { useQuery, keepPreviousData } from '@tanstack/vue-query'
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
 import { Star, MapPin, Sunrise, Sunset } from 'lucide-vue-next'
-import Skeleton from '@/components/ui/Skeleton.vue'
+import Spinner from '@/components/ui/Spinner.vue'
 import { usePlacesStore } from '@/stores/places'
 import { useSkyStore } from '@/stores/sky'
 import { fetchConditions, fetchAirQuality, POLLEN_KEYS } from '@/api/weather'
@@ -90,44 +90,33 @@ const stats = computed<Stat[]>(() => {
           <Sunset :size="13" class="opacity-70" />{{ fmtTime(daily.sunset?.[0] as string) }}
         </span>
       </div>
-      <Skeleton v-else class="h-3.5 w-28" />
     </div>
 
-    <!-- Aktuelle Lage: ruhig, damit das Ensemble-Feld im Hintergrund wirkt -->
     <transition name="sk-fade" mode="out-in">
-      <div v-if="!loading" key="live" class="mt-4 flex items-end gap-5">
-        <div class="readout text-primary" style="font-size: clamp(56px, 11vw, 112px)">
-          {{ fmtTemp(c?.temperature_2m, 0) }}
-        </div>
-        <div class="pb-3">
-          <component :is="skyIcon" :size="34" class="text-primary" :stroke-width="1.5" />
-          <div class="mt-1 text-[16px] font-semibold leading-tight">{{ skyText }}</div>
-          <div class="text-[13px] text-muted-foreground">{{ $t('hero.feltShort') }} {{ fmtTemp(c?.apparent_temperature, 0) }}</div>
-        </div>
+      <!-- Kaltstart: schlichter Spinner in reserviertem Platz (kein Springen). -->
+      <div v-if="loading" key="load" class="grid place-items-center" style="min-height: 244px">
+        <Spinner :size="30" />
       </div>
-      <div v-else key="load" class="mt-4 flex items-end gap-5">
-        <Skeleton class="h-[92px] w-[150px] sm:h-[104px]" />
-        <div class="flex flex-col gap-2 pb-3">
-          <Skeleton class="h-[34px] w-[34px] rounded-full" />
-          <Skeleton class="h-4 w-24" />
-          <Skeleton class="h-3 w-16" />
+      <div v-else key="live">
+        <!-- Aktuelle Lage: ruhig, damit das Ensemble-Feld im Hintergrund wirkt -->
+        <div class="mt-4 flex items-end gap-5">
+          <div class="readout text-primary" style="font-size: clamp(56px, 11vw, 112px)">
+            {{ fmtTemp(c?.temperature_2m, 0) }}
+          </div>
+          <div class="pb-3">
+            <component :is="skyIcon" :size="34" class="text-primary" :stroke-width="1.5" />
+            <div class="mt-1 text-[16px] font-semibold leading-tight">{{ skyText }}</div>
+            <div class="text-[13px] text-muted-foreground">{{ $t('hero.feltShort') }} {{ fmtTemp(c?.apparent_temperature, 0) }}</div>
+          </div>
         </div>
-      </div>
-    </transition>
 
-    <!-- Instrument-Strip: alle Werte als ein geripptes Panel statt Einzelkacheln -->
-    <transition name="sk-fade" mode="out-in">
-      <div v-if="!loading" key="live" class="strip mt-5">
-        <div v-for="s in stats" :key="s.label" class="cell">
-          <div class="label">{{ s.label }}</div>
-          <div class="readout mt-1.5 text-[21px]" :style="s.color ? { color: s.color } : undefined">{{ s.value }}</div>
-          <div v-if="s.sub" class="mt-0.5 text-[11px] text-muted-foreground">{{ s.sub }}</div>
-        </div>
-      </div>
-      <div v-else key="load" class="strip mt-5">
-        <div v-for="i in 10" :key="i" class="cell">
-          <Skeleton class="h-2.5 w-12" />
-          <Skeleton class="mt-2.5 h-5 w-14" />
+        <!-- Instrument-Strip: alle Werte als ein geripptes Panel statt Einzelkacheln -->
+        <div class="strip mt-5">
+          <div v-for="s in stats" :key="s.label" class="cell">
+            <div class="label">{{ s.label }}</div>
+            <div class="readout mt-1.5 text-[21px]" :style="s.color ? { color: s.color } : undefined">{{ s.value }}</div>
+            <div v-if="s.sub" class="mt-0.5 text-[11px] text-muted-foreground">{{ s.sub }}</div>
+          </div>
         </div>
       </div>
     </transition>

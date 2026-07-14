@@ -48,8 +48,8 @@ const LOCALES: Locale[] = ['de', 'en']
     <SkyCanvas />
 
     <header
-      class="sticky top-0 z-50 flex items-center justify-between gap-4 border-b border-border px-5 py-3 backdrop-blur-xl"
-      style="background: linear-gradient(180deg, color-mix(in srgb, var(--background) 82%, transparent), color-mix(in srgb, var(--background) 42%, transparent))"
+      class="sticky top-0 z-50 flex items-center justify-between gap-4 border-b border-border px-5 py-3"
+      style="background: linear-gradient(180deg, color-mix(in srgb, var(--background) 95%, transparent), color-mix(in srgb, var(--background) 82%, transparent))"
     >
       <router-link to="/models" class="group flex items-center gap-3">
         <span

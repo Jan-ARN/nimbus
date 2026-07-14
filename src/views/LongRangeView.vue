@@ -5,8 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
 import { TrendingUp, TrendingDown, MoveRight, Info, ArrowUp, ArrowDown, Equal } from 'lucide-vue-next'
 import BandChart from '@/components/BandChart.vue'
-import Skeleton from '@/components/ui/Skeleton.vue'
-import ChartSkeleton from '@/components/ui/ChartSkeleton.vue'
+import Spinner from '@/components/ui/Spinner.vue'
 import { usePlacesStore } from '@/stores/places'
 import { fetchEnsemble } from '@/api/weather'
 import { aggregateEnsemble } from '@/lib/series'
@@ -132,7 +131,7 @@ function fmtCellDate(iso: string): string {
       <div class="label mb-4">{{ $t('longRange.highsOutlookSub') }}</div>
       <transition name="sk-fade" mode="out-in">
         <BandChart v-if="days.length" :days="days" :baseline="baseline" :reliable-until="reliableUntil" />
-        <ChartSkeleton v-else />
+        <div v-else class="grid h-[240px] place-items-center sm:h-[290px] lg:h-[320px]"><Spinner /></div>
       </transition>
     </section>
 
@@ -140,10 +139,8 @@ function fmtCellDate(iso: string): string {
     <section class="glass reveal p-5">
       <h2 class="font-display text-[22px] font-semibold">{{ $t('longRange.warmerColder') }}</h2>
       <div class="label mb-4">{{ $t('longRange.comparedToToday', { base: baseline?.toFixed(0) }) }}</div>
-      <div class="grid grid-cols-[repeat(auto-fill,minmax(80px,1fr))] gap-2">
-        <template v-if="!dayCells.length">
-          <Skeleton v-for="i in 14" :key="'sk' + i" class="h-[86px]" />
-        </template>
+      <div v-if="!dayCells.length" class="grid h-[200px] place-items-center"><Spinner /></div>
+      <div v-else class="grid grid-cols-[repeat(auto-fill,minmax(80px,1fr))] gap-2">
         <div
           v-for="c in dayCells"
           :key="c.date"
