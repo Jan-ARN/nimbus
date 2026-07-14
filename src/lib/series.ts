@@ -154,17 +154,21 @@ export function aggregateEnsemble(res: EnsembleResponse): EnsembleDay[] {
   return out.sort((a, b) => a.date.localeCompare(b.date))
 }
 
-// Tages-Höchstwert je Kalendertag aus einer Stundenreihe (nulls ignorieren).
-// Genutzt für den Prognose-Güte-Vergleich: aus stündlichen Läufen wird je Tag
-// der Höchstwert wie in einer Wetter-App.
-export function dailyMaxByDate(time: string[], values: NumArr): Map<string, number> {
+// Tages-Höchst- ODER -Tiefstwert je Kalendertag aus einer Stundenreihe
+// (nulls ignorieren). Genutzt für den Prognose-Güte-Vergleich: aus stündlichen
+// Läufen wird je Tag der Höchst-/Tiefstwert wie in einer Wetter-App.
+export function dailyExtremeByDate(
+  time: string[],
+  values: NumArr,
+  kind: 'max' | 'min',
+): Map<string, number> {
   const out = new Map<string, number>()
   for (let i = 0; i < time.length; i++) {
     const v = values[i]
     if (v == null || Number.isNaN(v)) continue
     const day = time[i].slice(0, 10)
     const cur = out.get(day)
-    if (cur == null || v > cur) out.set(day, v)
+    if (cur == null || (kind === 'max' ? v > cur : v < cur)) out.set(day, v)
   }
   return out
 }

@@ -10,7 +10,7 @@ import Skeleton from '@/components/ui/Skeleton.vue'
 import type { LineSeries } from '@/lib/chartTypes'
 import { usePlacesStore } from '@/stores/places'
 import { fetchArchive, fetchForecastRuns, LEAD_DAYS } from '@/api/weather'
-import { dailyMaxByDate, type NumArr } from '@/lib/series'
+import { dailyExtremeByDate, type NumArr } from '@/lib/series'
 import { fmtTemp } from '@/lib/format'
 import { localeTag } from '@/i18n'
 
@@ -19,17 +19,24 @@ const { t } = useI18n()
 const places = usePlacesStore()
 const { active } = storeToRefs(places)
 
-const DAYS = 14
+type Metric = 'max' | 'min'
+const metric = ref<Metric>('max') // Höchst- vs. Tiefstwert
 const lead = ref<number>(3) // gewählte Vorlaufzeit (Tage)
+const windowDays = ref<number>(30) // Zeitfenster
+const WINDOWS = [
+  { days: 14, key: 'window2w' },
+  { days: 30, key: 'window1m' },
+  { days: 90, key: 'window3m' },
+] as const
 
 const archive = useQuery({
-  queryKey: computed(() => ['archive', active.value.id]),
-  queryFn: () => fetchArchive(active.value, DAYS),
+  queryKey: computed(() => ['archive', active.value.id, windowDays.value]),
+  queryFn: () => fetchArchive(active.value, windowDays.value),
   placeholderData: keepPreviousData,
 })
 const runs = useQuery({
-  queryKey: computed(() => ['runs', active.value.id]),
-  queryFn: () => fetchForecastRuns(active.value, DAYS),
+  queryKey: computed(() => ['runs', active.value.id, windowDays.value]),
+  queryFn: () => fetchForecastRuns(active.value, windowDays.value),
   placeholderData: keepPreviousData,
 })
 
@@ -40,43 +47,44 @@ const actual = computed(() => {
   const time = (d.time as string[]) ?? []
   const max = (d.temperature_2m_max as NumArr) ?? []
   const min = (d.temperature_2m_min as NumArr) ?? []
-  const rows = time
+  return time
     .map((date, i) => ({ date, max: max[i] as number | null, min: min[i] as number | null }))
-    .filter((r) => r.max != null)
-  return rows
+    .filter((r) => r.max != null || r.min != null)
 })
 
-// Höchstwert-Prognose je Vorlaufzeit und Tag (aus den früheren Läufen).
+// Höchst- UND Tiefstwert-Prognose je Vorlaufzeit und Tag (aus den früheren Läufen).
 const forecastByLead = computed(() => {
   const h = runs.data.value?.hourly
   if (!h) return null
   const time = (h.time as string[]) ?? []
-  const out = new Map<number, Map<string, number>>()
+  const out = new Map<number, { max: Map<string, number>; min: Map<string, number> }>()
   for (const n of LEAD_DAYS) {
     const vals = (h[`temperature_2m_previous_day${n}`] as NumArr) ?? []
-    out.set(n, dailyMaxByDate(time, vals))
+    out.set(n, {
+      max: dailyExtremeByDate(time, vals, 'max'),
+      min: dailyExtremeByDate(time, vals, 'min'),
+    })
   }
   return out
 })
 
 interface DayRow {
   date: string
-  actualMax: number
+  actualVal: number
   forecast: number | null
   error: number | null // Prognose − Realität (positiv = Prognose war zu warm)
 }
 const rows = computed<DayRow[]>(() => {
   if (!actual.value || !forecastByLead.value) return []
-  const fmap = forecastByLead.value.get(lead.value)
-  return actual.value.map((r) => {
-    const forecast = fmap?.get(r.date) ?? null
-    return {
-      date: r.date,
-      actualMax: r.max as number,
-      forecast,
-      error: forecast != null ? forecast - (r.max as number) : null,
-    }
-  })
+  const fmap = forecastByLead.value.get(lead.value)?.[metric.value]
+  return actual.value
+    .map((r) => {
+      const av = metric.value === 'max' ? r.max : r.min
+      if (av == null) return null
+      const forecast = fmap?.get(r.date) ?? null
+      return { date: r.date, actualVal: av, forecast, error: forecast != null ? forecast - av : null }
+    })
+    .filter((r): r is DayRow => r != null)
 })
 
 // Kennzahlen der Treffsicherheit: mittlerer absoluter Fehler + systematische
@@ -96,13 +104,14 @@ const biasText = computed(() => {
     ? t('history.biasWarm', { v: b.toFixed(1) })
     : t('history.biasCool', { v: Math.abs(b).toFixed(1) })
 })
+const metricWord = computed(() => t(metric.value === 'max' ? 'history.metricHighWord' : 'history.metricLowWord'))
 
 // Overlay: beobachtet vs. Prognose der gewählten Vorlaufzeit.
 const chart = computed(() => {
   if (!rows.value.length) return null
   const time = rows.value.map((r) => r.date)
   const series: LineSeries[] = [
-    { key: 'actual', label: t('history.actual'), color: '#eef2fa', values: rows.value.map((r) => r.actualMax) },
+    { key: 'actual', label: t('history.actual'), color: '#eef2fa', values: rows.value.map((r) => r.actualVal) },
     { key: 'forecast', label: t('history.forecastLead', { n: lead.value }), color: 'var(--primary)', values: rows.value.map((r) => r.forecast) },
   ]
   return { time, series }
@@ -136,33 +145,65 @@ const loading = computed(() => !rows.value.length)
             {{ $t('history.offBy', { v: skill.mae.toFixed(1) }) }}
           </h1>
           <div class="text-[13px] text-muted-foreground">
-            {{ $t('history.leadSummary', { n: lead, days: skill.n }) }} · {{ biasText }}
+            {{ $t('history.leadSummary', { metric: metricWord, n: lead, days: skill.n }) }} · {{ biasText }}
           </div>
         </template>
         <Skeleton v-else class="mt-1 h-8 w-56" />
       </div>
     </section>
 
-    <!-- Vorlaufzeit wählen -->
-    <div class="flex flex-wrap items-center gap-3">
-      <span class="label">{{ $t('history.leadLabel') }}</span>
-      <div class="flex overflow-hidden rounded-full border border-border">
-        <button
-          v-for="n in LEAD_DAYS"
-          :key="n"
-          class="px-4 py-1.5 font-mono text-xs transition-colors"
-          :class="lead === n ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'"
-          @click="lead = n"
-        >
-          {{ $t('history.leadN', { n }) }}
-        </button>
+    <!-- Steuerung: Wert · Vorlauf · Zeitfenster -->
+    <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-6">
+      <div class="flex items-center gap-3">
+        <span class="label">{{ $t('history.metricLabel') }}</span>
+        <div class="flex overflow-hidden rounded-full border border-border">
+          <button
+            v-for="m in (['max', 'min'] as const)"
+            :key="m"
+            class="px-4 py-1.5 text-xs font-medium transition-colors"
+            :class="metric === m ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'"
+            @click="metric = m"
+          >
+            {{ $t(m === 'max' ? 'history.metricHigh' : 'history.metricLow') }}
+          </button>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <span class="label">{{ $t('history.leadLabel') }}</span>
+        <div class="flex overflow-hidden rounded-full border border-border">
+          <button
+            v-for="n in LEAD_DAYS"
+            :key="n"
+            class="px-3.5 py-1.5 font-mono text-xs transition-colors"
+            :class="lead === n ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'"
+            @click="lead = n"
+          >
+            {{ $t('history.leadN', { n }) }}
+          </button>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <span class="label">{{ $t('history.windowLabel') }}</span>
+        <div class="flex overflow-hidden rounded-full border border-border">
+          <button
+            v-for="w in WINDOWS"
+            :key="w.days"
+            class="px-3.5 py-1.5 font-mono text-xs transition-colors"
+            :class="windowDays === w.days ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'"
+            @click="windowDays = w.days"
+          >
+            {{ $t('history.' + w.key) }}
+          </button>
+        </div>
       </div>
     </div>
 
     <!-- Overlay: beobachtet vs. Prognose -->
     <section class="glass reveal p-5">
       <h2 class="font-display text-[22px] font-semibold">{{ $t('history.highsTitle') }}</h2>
-      <div class="label mb-3">{{ $t('history.highsSub', { n: lead }) }}</div>
+      <div class="label mb-3">{{ $t('history.highsSub', { metric: metricWord, n: lead }) }}</div>
       <div class="mb-3 flex flex-wrap gap-4 text-[12px]">
         <span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full" style="background: #eef2fa" />{{ $t('history.actual') }}</span>
         <span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full" style="background: var(--primary)" />{{ $t('history.forecastLead', { n: lead }) }}</span>
@@ -176,10 +217,10 @@ const loading = computed(() => !rows.value.length)
     <!-- Tag-für-Tag: wärmer/kühler als gedacht -->
     <section class="glass reveal p-5">
       <h2 class="font-display text-[22px] font-semibold">{{ $t('history.dailyTitle') }}</h2>
-      <div class="label mb-4">{{ $t('history.dailySub', { n: lead }) }}</div>
-      <div class="grid grid-cols-[repeat(auto-fill,minmax(84px,1fr))] gap-2">
+      <div class="label mb-4">{{ $t('history.dailySub', { metric: metricWord, n: lead }) }}</div>
+      <div class="grid grid-cols-[repeat(auto-fill,minmax(78px,1fr))] gap-2">
         <template v-if="loading">
-          <Skeleton v-for="i in 14" :key="'sk' + i" class="h-[92px]" />
+          <Skeleton v-for="i in 14" :key="'sk' + i" class="h-[86px]" />
         </template>
         <div
           v-for="r in rows"
@@ -189,7 +230,7 @@ const loading = computed(() => !rows.value.length)
           :style="r.error != null ? { background: errColor(r.error), borderColor: errColor(r.error) } : { borderColor: 'var(--border)' }"
         >
           <div class="font-mono text-[11px] opacity-90">{{ fmtCellDate(r.date) }}</div>
-          <div class="readout my-1 text-lg">{{ fmtTemp(r.actualMax) }}</div>
+          <div class="readout my-1 text-lg">{{ fmtTemp(r.actualVal) }}</div>
           <template v-if="r.error != null">
             <div class="flex items-center justify-center gap-0.5 font-mono text-[11px]">
               <component :is="errIcon(r.error)" :size="12" />
@@ -200,7 +241,7 @@ const loading = computed(() => !rows.value.length)
         </div>
       </div>
       <p class="mt-4 flex items-start gap-1.5 text-[12px] text-muted-foreground">
-        {{ $t('history.legend') }}
+        {{ $t('history.legend', { metric: metricWord }) }}
       </p>
     </section>
   </div>
