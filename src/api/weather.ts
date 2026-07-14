@@ -10,6 +10,10 @@ const ENDPOINTS: Record<string, string> = {
   '/api/geocode': 'https://geocoding-api.open-meteo.com/v1/search',
   '/api/air': 'https://air-quality-api.open-meteo.com/v1/air-quality',
   '/api/warnings': 'https://api.brightsky.dev/alerts',
+  // Beobachtete Werte (ERA5-Reanalyse) & Vorhersagen früherer Modell-Läufe →
+  // damit lässt sich prüfen, wie gut die Prognose N Tage im Voraus wirklich war.
+  '/api/archive': 'https://archive-api.open-meteo.com/v1/archive',
+  '/api/previous': 'https://previous-runs-api.open-meteo.com/v1/forecast',
 }
 
 // --- Low-level fetch ----------------------------------------------------------
@@ -187,4 +191,57 @@ export async function fetchWarnings(place: Place): Promise<WeatherAlert[]> {
   } catch {
     return []
   }
+}
+
+// --- Verlauf & Prognose-Güte --------------------------------------------------
+// „Wie warm war es wirklich?" (ERA5-Reanalyse) plus „was hatte die Prognose N
+// Tage vorher gesagt?" (frühere Modell-Läufe). Aus beidem lässt sich die
+// tatsächliche Treffsicherheit der App nachrechnen.
+
+export interface ArchiveResponse {
+  daily?: Record<string, (number | null | string)[]>
+}
+
+function isoDay(d: Date): string {
+  return d.toISOString().slice(0, 10)
+}
+
+/** Beobachtete Tages-Höchst/Tiefstwerte der letzten `days` Tage (ERA5). */
+export async function fetchArchive(place: Place, days = 14): Promise<ArchiveResponse> {
+  const end = new Date()
+  end.setDate(end.getDate() - 1) // gestern; die letzten ~1–2 Tage fehlen im Archiv
+  const start = new Date(end)
+  start.setDate(start.getDate() - (days - 1))
+  return getJson<ArchiveResponse>('/api/archive', {
+    latitude: place.lat,
+    longitude: place.lon,
+    start_date: isoDay(start),
+    end_date: isoDay(end),
+    daily: 'temperature_2m_max,temperature_2m_min',
+    timezone: 'auto',
+  })
+}
+
+// Vorlaufzeiten (Tage), für die wir die frühere Prognose gegen die Realität halten.
+export const LEAD_DAYS = [1, 3, 5, 7] as const
+
+export interface PreviousRunsResponse {
+  hourly?: Record<string, (number | null)[] | string[]>
+}
+
+/**
+ * Stündliche Temperatur aus dem aktuellen Lauf plus den Läufen von vor 1/3/5/7
+ * Tagen (`temperature_2m_previous_dayN`). Über den Tag aggregiert ergibt das die
+ * Höchstwert-Prognose je Vorlaufzeit — Basis für den Soll/Ist-Vergleich.
+ */
+export async function fetchForecastRuns(place: Place, pastDays = 14): Promise<PreviousRunsResponse> {
+  const prev = LEAD_DAYS.map((n) => `temperature_2m_previous_day${n}`).join(',')
+  return getJson<PreviousRunsResponse>('/api/previous', {
+    latitude: place.lat,
+    longitude: place.lon,
+    hourly: `temperature_2m,${prev}`,
+    past_days: pastDays,
+    forecast_days: 1,
+    timezone: 'auto',
+  })
 }

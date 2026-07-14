@@ -26,6 +26,12 @@ export const router = createRouter({
       component: () => import('./views/AirView.vue'),
       meta: { title: 'Luft & Pollen', icon: 'mdi-air-filter' },
     },
+    {
+      path: '/history',
+      name: 'history',
+      component: () => import('./views/HistoryView.vue'),
+      meta: { title: 'Verlauf', icon: 'mdi-history' },
+    },
     // Alte deutsche Pfade weiterleiten
     { path: '/karte', redirect: '/models' },
     { path: '/map', redirect: '/models' },

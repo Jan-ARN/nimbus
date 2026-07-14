@@ -3,7 +3,7 @@ import { computed, watch, watchEffect } from 'vue'
 import { useQuery, keepPreviousData } from '@tanstack/vue-query'
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
-import { ChartSpline, CalendarClock, Wind, Languages } from 'lucide-vue-next'
+import { ChartSpline, CalendarClock, Wind, History, Languages } from 'lucide-vue-next'
 import { setLocale, type Locale } from '@/i18n'
 import NimbusMark from '@/components/NimbusMark.vue'
 import SkyCanvas from '@/components/SkyCanvas.vue'
@@ -38,6 +38,7 @@ const tabs = [
   { to: '/models', labelKey: 'nav.models', icon: ChartSpline },
   { to: '/outlook', labelKey: 'nav.longRange', icon: CalendarClock },
   { to: '/air', labelKey: 'nav.air', icon: Wind },
+  { to: '/history', labelKey: 'nav.history', icon: History },
 ]
 const LOCALES: Locale[] = ['de', 'en']
 </script>
