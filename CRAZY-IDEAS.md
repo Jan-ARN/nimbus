@@ -18,19 +18,21 @@ Mainstream apps hide three things on purpose — **uncertainty**, **model disagr
 - **Self-correcting forecast** (History tab) — `src/lib/verify.ts` computes ME/MAE/RMSE/skill and a *causal, lag-by-lead* bias correction (only uses actuals known at each forecast's issue time — no hindsight). History tab shows a bias-corrected line, an honest verdict, and a plain-language explainer of what "bias correction" means. Verified on live Cologne data: day-1 has a +1.2° warm bias → correction is ~27% better; longer leads are near-unbiased so it truthfully reports "no bias to exploit." *(§1b)*
 - **Animated ensemble / HOPs** (Long-range tab) — `src/components/EnsembleHopsChart.vue` + `ensembleMembers()` in `series.ts`; a **Band ↔ Scenarios** toggle cycles the 31 GEFS runs with a fading trail + run counter, respects `prefers-reduced-motion`. *(§5)*
 - **Snapshot seed** — `src/lib/snapshots.ts` runs once per place per day (deduped), banks all 7 models' daily forecasts by target-date → lead → model (verification-ready), prunes >120 d; History shows a "N days banked" line. This is the data foundation the two features below need. *(§1a groundwork)*
+- **Records & streaks + climate anomaly** (Records tab) — `src/lib/climate.ts` (pure) + `src/views/RecordsView.vue`, fed by `fetchClimateArchive()` (one CORS request, full ERA5 daily series 1940→present, ~0.9 MB, `staleTime: Infinity`). Four immediate facts: *"is today weird?"* (today's forecast high vs the ±7-day-smoothed 1991–2020 normal, diverging chip), calendar-day records (warmest/coldest/wettest this date since 1940 + year), dry-spell streak (current + longest, threshold 1 mm), and all-time extremes. Two honesty labels: source is **ERA5 reanalysis, not the DWD station book**, and streaks are counted **as of** the last archive day (~2-day lag). Math verified on live Cologne data (Jul 14 hottest 32.1°/2010; all-time 38.8°/2019-07-25, −25°/1956, wettest 153.7 mm on 2021-07-14 — the Ahr flood). *(§2)*
 
 **🌱 Seeded, waiting on data to mature** (the snapshot store must accumulate days before these have anything to show)
 - **Per-model leaderboard** (§1a) — "which model to trust *here*" per lead-time. Just needs a view that reads the snapshot store + verifies against the ERA5 archive.
 - **Convergence replay** (§3) — how a forecast for a fixed date sharpened as it approached (works past day 7 only from banked snapshots).
 
 **▶️ Suggested next** (no waiting required — see build order at the bottom)
-- Records & streaks + climate anomaly (§2) — pure archive queries, immediate.
-- Plain-language narration (§6), or the ensemble meteogram/bi-modality upgrade (§7).
+- Plain-language narration (§6) — rule-based paragraph over data already computed; or the ensemble meteogram/bi-modality upgrade (§7).
+- Analog-day finder (§4) — reuses the `climate.ts` archive fetch now in place.
 
 **Key constraints already established** (don't re-derive next session)
 - Open-Meteo `previous-runs-api` gives the *blended* forecast retrospectively (≤7 d, no per-model suffix) — good enough for §1b, but the per-model leaderboard and >7 d convergence *require* the snapshot seed.
 - Honest-claim rule is baked into `verify.ts`: a lead-N correction may only use pairs with target ≤ D − N − 2 (ERA5 lags ~2 d). Report the real number; the engine slightly worsens near-zero-bias leads and says so.
 - No test runner in the repo; verify math via `npx tsx` scripts (localStorage/navigator/document shims needed to import the DOM-touching chain) and `npm run build`.
+- The Open-Meteo **archive API serves the full 1940→present daily series in one CORS request** (~0.9 MB, ~31.6k rows, no nulls) — no chunking needed. `src/lib/climate.ts` is pure (no DOM), so it `tsx`-verifies directly against a saved archive JSON.
 
 ---
 

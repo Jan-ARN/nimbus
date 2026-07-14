@@ -222,6 +222,25 @@ export async function fetchArchive(place: Place, days = 14): Promise<ArchiveResp
   })
 }
 
+/**
+ * Komplette Tages-Klimareihe seit 1940 (ERA5-Reanalyse): Höchst-/Tiefstwert und
+ * Niederschlag je Tag. Basis für Rekorde, Serien und die „ist das normal?"-Einordnung
+ * (Klima-Normalwerte 1991–2020). Ein einziger, CORS-fähiger Request (~0,9 MB) — wird
+ * dauerhaft gecacht, weil sich 85 Jahre Vergangenheit nicht mehr ändern.
+ */
+export async function fetchClimateArchive(place: Place): Promise<ArchiveResponse> {
+  const end = new Date()
+  end.setDate(end.getDate() - 1) // die letzten ~1–2 Tage fehlen im Archiv
+  return getJson<ArchiveResponse>('/api/archive', {
+    latitude: place.lat,
+    longitude: place.lon,
+    start_date: '1940-01-01',
+    end_date: isoDay(end),
+    daily: 'temperature_2m_max,temperature_2m_min,precipitation_sum',
+    timezone: 'auto',
+  })
+}
+
 // Vorlaufzeiten (Tage), für die wir die frühere Prognose gegen die Realität halten.
 export const LEAD_DAYS = [1, 3, 5, 7] as const
 

@@ -32,6 +32,12 @@ export const router = createRouter({
       component: () => import('./views/HistoryView.vue'),
       meta: { title: 'Verlauf', icon: 'mdi-history' },
     },
+    {
+      path: '/records',
+      name: 'records',
+      component: () => import('./views/RecordsView.vue'),
+      meta: { title: 'Rekorde', icon: 'mdi-trophy' },
+    },
     // Alte deutsche Pfade weiterleiten
     { path: '/karte', redirect: '/models' },
     { path: '/map', redirect: '/models' },
