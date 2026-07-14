@@ -12,6 +12,28 @@ Mainstream apps hide three things on purpose — **uncertainty**, **model disagr
 
 ---
 
+# Build status (as of commit `37808fb`)
+
+**✅ Shipped**
+- **Self-correcting forecast** (History tab) — `src/lib/verify.ts` computes ME/MAE/RMSE/skill and a *causal, lag-by-lead* bias correction (only uses actuals known at each forecast's issue time — no hindsight). History tab shows a bias-corrected line, an honest verdict, and a plain-language explainer of what "bias correction" means. Verified on live Cologne data: day-1 has a +1.2° warm bias → correction is ~27% better; longer leads are near-unbiased so it truthfully reports "no bias to exploit." *(§1b)*
+- **Animated ensemble / HOPs** (Long-range tab) — `src/components/EnsembleHopsChart.vue` + `ensembleMembers()` in `series.ts`; a **Band ↔ Scenarios** toggle cycles the 31 GEFS runs with a fading trail + run counter, respects `prefers-reduced-motion`. *(§5)*
+- **Snapshot seed** — `src/lib/snapshots.ts` runs once per place per day (deduped), banks all 7 models' daily forecasts by target-date → lead → model (verification-ready), prunes >120 d; History shows a "N days banked" line. This is the data foundation the two features below need. *(§1a groundwork)*
+
+**🌱 Seeded, waiting on data to mature** (the snapshot store must accumulate days before these have anything to show)
+- **Per-model leaderboard** (§1a) — "which model to trust *here*" per lead-time. Just needs a view that reads the snapshot store + verifies against the ERA5 archive.
+- **Convergence replay** (§3) — how a forecast for a fixed date sharpened as it approached (works past day 7 only from banked snapshots).
+
+**▶️ Suggested next** (no waiting required — see build order at the bottom)
+- Records & streaks + climate anomaly (§2) — pure archive queries, immediate.
+- Plain-language narration (§6), or the ensemble meteogram/bi-modality upgrade (§7).
+
+**Key constraints already established** (don't re-derive next session)
+- Open-Meteo `previous-runs-api` gives the *blended* forecast retrospectively (≤7 d, no per-model suffix) — good enough for §1b, but the per-model leaderboard and >7 d convergence *require* the snapshot seed.
+- Honest-claim rule is baked into `verify.ts`: a lead-N correction may only use pairs with target ≤ D − N − 2 (ERA5 lags ~2 d). Report the real number; the engine slightly worsens near-zero-bias leads and says so.
+- No test runner in the repo; verify math via `npx tsx` scripts (localStorage/navigator/document shims needed to import the DOM-touching chain) and `npm run build`.
+
+---
+
 # Part I — The four directions you picked
 
 ## 1. The self-grading scoreboard → a forecast that beats its own models ⭐ the leap
