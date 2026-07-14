@@ -70,7 +70,7 @@ export interface ForecastResponse {
 export async function fetchMultiModelForecast(
   place: Place,
   modelIds: string[],
-  days = 16,
+  days = 14,
 ): Promise<ForecastResponse> {
   return getJson<ForecastResponse>('/api/forecast', {
     latitude: place.lat,
@@ -120,7 +120,7 @@ export interface ConditionsResponse {
   utc_offset_seconds?: number
 }
 
-export async function fetchConditions(place: Place, days = 16): Promise<ConditionsResponse> {
+export async function fetchConditions(place: Place, days = 14): Promise<ConditionsResponse> {
   return getJson<ConditionsResponse>('/api/forecast', {
     latitude: place.lat,
     longitude: place.lon,

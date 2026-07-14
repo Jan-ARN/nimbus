@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useElementSize } from '@vueuse/core'
 import { extent, type NumArr } from '@/lib/series'
 import type { LineSeries } from '@/lib/chartTypes'
 import { localeTag } from '@/i18n'
@@ -12,11 +13,18 @@ const props = defineProps<{
   nowIso?: string
 }>()
 
-const W = 900
-const H = 340
-const PAD = { l: 44, r: 12, t: 16, b: 28 }
-const innerW = W - PAD.l - PAD.r
-const innerH = H - PAD.t - PAD.b
+// Der SVG-Koordinatenraum entspricht 1:1 den echten Pixeln (viewBox = gemessene
+// Größe). So bleibt Text scharf und unverzerrt — kein preserveAspectRatio="none"
+// mehr, das früher auf schmalen Screens alles gestaucht hat.
+const wrap = ref<HTMLElement | null>(null)
+const { width } = useElementSize(wrap)
+const W = computed(() => Math.round(Math.max(320, width.value || 640)))
+const H = computed(() => (W.value < 480 ? 230 : W.value < 768 ? 290 : 340))
+const compact = computed(() => W.value < 560)
+
+const PAD = computed(() => ({ l: 36, r: 12, t: 16, b: 26 }))
+const innerW = computed(() => W.value - PAD.value.l - PAD.value.r)
+const innerH = computed(() => H.value - PAD.value.t - PAD.value.b)
 
 const bounds = computed<[number, number]>(() => {
   const all: NumArr = []
@@ -28,11 +36,11 @@ const bounds = computed<[number, number]>(() => {
 
 const n = computed(() => props.time.length)
 function x(i: number): number {
-  return PAD.l + (n.value <= 1 ? 0 : (i / (n.value - 1)) * innerW)
+  return PAD.value.l + (n.value <= 1 ? 0 : (i / (n.value - 1)) * innerW.value)
 }
 function y(v: number): number {
   const [lo, hi] = bounds.value
-  return PAD.t + innerH - ((v - lo) / (hi - lo || 1)) * innerH
+  return PAD.value.t + innerH.value - ((v - lo) / (hi - lo || 1)) * innerH.value
 }
 
 function pathFor(values: NumArr): string {
@@ -53,7 +61,7 @@ function pathFor(values: NumArr): string {
 // Y-Ticks
 const ticks = computed(() => {
   const [lo, hi] = bounds.value
-  const step = niceStep((hi - lo) / 5)
+  const step = niceStep((hi - lo) / (compact.value ? 4 : 5))
   const out: number[] = []
   for (let v = Math.ceil(lo / step) * step; v <= hi; v += step) out.push(v)
   return out
@@ -65,7 +73,8 @@ function niceStep(raw: number): number {
   return nice * pow
 }
 
-// X-Labels: nur bei Tagesbeginn beschriften
+// X-Labels: nur bei Tagesbeginn beschriften; auf schmalen Screens ausdünnen,
+// damit sich die Beschriftungen nicht überlappen.
 const dayLabels = computed(() => {
   const out: { i: number; label: string }[] = []
   let last = ''
@@ -75,14 +84,19 @@ const dayLabels = computed(() => {
       out.push({
         i,
         label: new Date(props.time[i]).toLocaleDateString(localeTag(), {
-          weekday: 'short',
+          weekday: compact.value ? undefined : 'short',
           day: '2-digit',
+          month: compact.value ? '2-digit' : undefined,
         }),
       })
       last = day
     }
   }
-  return out
+  // höchstens ~ W/70 Labels
+  const maxLabels = Math.max(3, Math.floor(W.value / 70))
+  if (out.length <= maxLabels) return out
+  const stride = Math.ceil(out.length / maxLabels)
+  return out.filter((_, i) => i % stride === 0)
 })
 
 const nowX = computed(() => {
@@ -91,19 +105,19 @@ const nowX = computed(() => {
   const t0 = new Date(props.time[0]).getTime()
   const t1 = new Date(props.time[props.time.length - 1]).getTime()
   if (!(t >= t0 && t <= t1)) return null
-  return PAD.l + ((t - t0) / (t1 - t0)) * innerW
+  return PAD.value.l + ((t - t0) / (t1 - t0)) * innerW.value
 })
 
-// --- Hover ---
+// --- Hover / Touch ---
 const svgRef = ref<SVGSVGElement | null>(null)
 const hoverI = ref<number | null>(null)
 
-function onMove(e: MouseEvent) {
+function onMove(e: PointerEvent) {
   const svg = svgRef.value
   if (!svg || n.value === 0) return
   const rect = svg.getBoundingClientRect()
-  const vx = ((e.clientX - rect.left) / rect.width) * W
-  const frac = (vx - PAD.l) / innerW
+  const vx = ((e.clientX - rect.left) / rect.width) * W.value
+  const frac = (vx - PAD.value.l) / innerW.value
   const i = Math.round(frac * (n.value - 1))
   hoverI.value = Math.max(0, Math.min(n.value - 1, i))
 }
@@ -129,14 +143,15 @@ const hoverReadout = computed(() => {
 </script>
 
 <template>
-  <div class="chart-wrap">
+  <div ref="wrap" class="chart-wrap">
     <svg
       ref="svgRef"
       :viewBox="`0 0 ${W} ${H}`"
-      preserveAspectRatio="none"
+      :height="H"
       class="chart"
-      @mousemove="onMove"
-      @mouseleave="onLeave"
+      @pointermove="onMove"
+      @pointerdown="onMove"
+      @pointerleave="onLeave"
     >
       <!-- Gitter + Y-Achse -->
       <g class="grid">
@@ -172,7 +187,7 @@ const hoverReadout = computed(() => {
         :stroke="s.color"
         stroke-width="2"
         stroke-linejoin="round"
-        vector-effect="non-scaling-stroke"
+        stroke-linecap="round"
       />
 
       <!-- Hover-Crosshair -->
@@ -205,16 +220,16 @@ const hoverReadout = computed(() => {
 <style scoped>
 .chart-wrap {
   position: relative;
+  width: 100%;
 }
 .chart {
   width: 100%;
-  height: 340px;
   display: block;
+  touch-action: pan-y;
 }
 .grid line {
   stroke: var(--border);
   stroke-width: 1;
-  vector-effect: non-scaling-stroke;
 }
 .grid text,
 .xlabels text {
@@ -227,18 +242,17 @@ const hoverReadout = computed(() => {
   opacity: 0.7;
   stroke-width: 1.5;
   stroke-dasharray: 4 4;
-  vector-effect: non-scaling-stroke;
 }
 .crosshair {
   stroke: var(--muted-foreground);
   stroke-width: 1;
-  vector-effect: non-scaling-stroke;
 }
 .chart-tip {
   position: absolute;
   top: 8px;
   right: 8px;
-  min-width: 170px;
+  min-width: 150px;
+  max-width: calc(100% - 16px);
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 12px;

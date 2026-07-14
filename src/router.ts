@@ -1,4 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
+// Landing-View direkt mitbündeln (nicht lazy): so erscheint beim ersten,
+// kalten Laden sofort die Hero-Karte (mit Skeleton) statt einer leeren Lücke,
+// während sonst noch ein separater Route-Chunk nachlädt.
+import CompareView from './views/CompareView.vue'
 
 export const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -7,7 +11,7 @@ export const router = createRouter({
     {
       path: '/models',
       name: 'models',
-      component: () => import('./views/CompareView.vue'),
+      component: CompareView,
       meta: { title: 'Modelle', icon: 'mdi-chart-timeline-variant' },
     },
     {

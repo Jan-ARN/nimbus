@@ -1,7 +1,7 @@
 {
-  "name": "Nimbus — Der Himmel über Köln",
+  "name": "Nimbus — Wetter im Detail",
   "short_name": "Nimbus",
-  "description": "Wetter über Köln — mehrere Modelle, Langfrist, Luft & Pollen.",
+  "description": "Wetter im Detail — mehrere Modelle, Langfrist, Luft & Pollen. Köln als Standard, weitere Orte frei wählbar.",
   "lang": "de",
   "start_url": "./",
   "scope": "./",

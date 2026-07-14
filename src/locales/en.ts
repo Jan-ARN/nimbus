@@ -1,6 +1,6 @@
 export default {
   nav: { models: 'Models', longRange: 'Long range', air: 'Air' },
-  app: { title: 'Nimbus — The sky over Cologne', subtitle: 'The sky over Cologne', langLabel: 'Language' },
+  app: { title: 'Nimbus — Weather in detail', subtitle: 'The sky over Cologne', skyOver: 'The sky over', langLabel: 'Language' },
   place: { label: 'Location', add: 'Place', search: 'Search city…', empty: 'Nothing found.' },
   hero: {
     feels: 'Feels like',
@@ -22,7 +22,7 @@ export default {
     tempCourse: 'Temperature trend',
     hourly: 'hourly',
     modelsCount: 'models',
-    outlook16: '16-day outlook',
+    outlook16: '14-day outlook',
     outlookSub: 'What the models agree on · tap a day for details',
     loadingModels: 'loading model data…',
     oneModel: '1 model',
@@ -44,7 +44,7 @@ export default {
     nextDays: 'next {n} days',
     highsVsToday: 'Highs {change}° vs today · median of 31 weather simulations',
     infoText:
-      "This far ahead it's about the {dir}, not exact degrees. Beyond about 16 days the forecast gets truly uncertain.",
+      "This far ahead it's about the {dir}, not exact degrees. Beyond about 14 days the forecast gets truly uncertain.",
     infoDir: 'direction',
     highsOutlook: 'Highs outlook',
     highsOutlookSub:

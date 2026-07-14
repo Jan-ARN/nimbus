@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useQuery } from '@tanstack/vue-query'
+import { useQuery, keepPreviousData } from '@tanstack/vue-query'
 import { storeToRefs } from 'pinia'
-import PlaceSelector from '@/components/PlaceSelector.vue'
 import { usePlacesStore } from '@/stores/places'
 import { fetchAirQuality, POLLEN_KEYS } from '@/api/weather'
 import { aqiLevel, pollenLevel, pollenName } from '@/lib/format'
@@ -13,6 +12,7 @@ const { active } = storeToRefs(places)
 const air = useQuery({
   queryKey: computed(() => ['air', active.value.id]),
   queryFn: () => fetchAirQuality(active.value),
+  placeholderData: keepPreviousData,
 })
 const cur = computed(() => air.data.value?.current as Record<string, number> | undefined)
 
@@ -54,11 +54,6 @@ const pollen = computed(() =>
 
 <template>
   <div class="flex flex-col gap-6">
-    <section class="glass reveal p-5">
-      <div class="label mb-2">{{ $t('air.location') }}</div>
-      <PlaceSelector />
-    </section>
-
     <!-- AQI Hero -->
     <section class="glass grid-texture reveal grid items-center gap-8 p-6 sm:grid-cols-[auto_1fr]">
       <div>

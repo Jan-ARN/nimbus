@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, watch, watchEffect } from 'vue'
-import { useQuery } from '@tanstack/vue-query'
+import { useQuery, keepPreviousData } from '@tanstack/vue-query'
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
 import { ChartSpline, CalendarClock, Wind, Languages } from 'lucide-vue-next'
@@ -8,6 +8,7 @@ import { setLocale, type Locale } from '@/i18n'
 import NimbusMark from '@/components/NimbusMark.vue'
 import SkyCanvas from '@/components/SkyCanvas.vue'
 import WarningsBanner from '@/components/WarningsBanner.vue'
+import PlaceSelector from '@/components/PlaceSelector.vue'
 import { usePlacesStore } from '@/stores/places'
 import { useSkyStore } from '@/stores/sky'
 import { fetchConditions } from '@/api/weather'
@@ -20,7 +21,8 @@ const sky = useSkyStore()
 const { active } = storeToRefs(places)
 const cond = useQuery({
   queryKey: computed(() => ['conditions', active.value.id]),
-  queryFn: () => fetchConditions(active.value, 16),
+  queryFn: () => fetchConditions(active.value, 14),
+  placeholderData: keepPreviousData,
 })
 watch(
   () => cond.data.value?.current,
@@ -55,7 +57,7 @@ const LOCALES: Locale[] = ['de', 'en']
         ><NimbusMark :size="24" /></span>
         <span class="flex flex-col leading-none">
           <span class="font-display text-xl font-semibold tracking-tight">Nimbus</span>
-          <span class="label mt-0.5">{{ t('app.subtitle') }}</span>
+          <span class="label mt-0.5 max-w-[42vw] truncate sm:max-w-none">{{ t('app.skyOver') }} {{ active.name }}</span>
         </span>
       </router-link>
 
@@ -94,7 +96,13 @@ const LOCALES: Locale[] = ['de', 'en']
     </header>
 
     <main class="relative z-10">
-      <div class="mx-auto max-w-[1180px] px-5 pb-24 pt-7">
+      <div class="mx-auto max-w-[1180px] px-4 pb-24 pt-5 sm:px-5 sm:pt-6">
+        <!-- Ort global & ganz oben: erst wählen, dann sehen (auf jeder Seite gleich).
+             relative z-30: das Such-Dropdown muss über die nachfolgenden Karten
+             (Warnung/Hero) gezeichnet werden — backdrop-filter kapselt sonst z-index. -->
+        <div class="glass relative z-30 mb-4 p-2.5 sm:p-3">
+          <PlaceSelector />
+        </div>
         <WarningsBanner class="mb-4" />
         <router-view v-slot="{ Component }">
           <transition name="fade" mode="out-in">

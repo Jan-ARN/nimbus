@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useQuery } from '@tanstack/vue-query'
+import { useQuery, keepPreviousData } from '@tanstack/vue-query'
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
 import { TrendingUp, TrendingDown, MoveRight, Info, ArrowUp, ArrowDown, Equal } from 'lucide-vue-next'
-import PlaceSelector from '@/components/PlaceSelector.vue'
 import BandChart from '@/components/BandChart.vue'
+import Skeleton from '@/components/ui/Skeleton.vue'
 import { usePlacesStore } from '@/stores/places'
 import { fetchEnsemble } from '@/api/weather'
 import { aggregateEnsemble } from '@/lib/series'
@@ -16,11 +16,12 @@ const { t } = useI18n()
 const places = usePlacesStore()
 const { active } = storeToRefs(places)
 
-const RELIABLE_DAYS = 16
+const RELIABLE_DAYS = 14
 
 const query = useQuery({
   queryKey: computed(() => ['ensemble', active.value.id]),
   queryFn: () => fetchEnsemble(active.value, 35),
+  placeholderData: keepPreviousData,
 })
 
 const days = computed(() => (query.data.value ? aggregateEnsemble(query.data.value) : []))
@@ -98,11 +99,6 @@ function fmtCellDate(iso: string): string {
 
 <template>
   <div class="flex flex-col gap-6">
-    <section class="glass reveal p-5">
-      <div class="label mb-2">{{ $t('place.label') }}</div>
-      <PlaceSelector />
-    </section>
-
     <!-- Tendenz-Headline -->
     <section class="glass grid-texture reveal flex items-center gap-6 p-6">
       <div
@@ -134,7 +130,7 @@ function fmtCellDate(iso: string): string {
       <h2 class="font-display text-[22px] font-semibold">{{ $t('longRange.highsOutlook') }}</h2>
       <div class="label mb-4">{{ $t('longRange.highsOutlookSub') }}</div>
       <BandChart v-if="days.length" :days="days" :baseline="baseline" :reliable-until="reliableUntil" />
-      <div v-else class="grid h-52 place-items-center font-mono text-[13px] text-muted-foreground">{{ $t('longRange.loadingEnsemble') }}</div>
+      <Skeleton v-else class="h-[240px] w-full sm:h-[290px] lg:h-[320px]" />
     </section>
 
     <!-- Trend-Kacheln -->
@@ -142,6 +138,9 @@ function fmtCellDate(iso: string): string {
       <h2 class="font-display text-[22px] font-semibold">{{ $t('longRange.warmerColder') }}</h2>
       <div class="label mb-4">{{ $t('longRange.comparedToToday', { base: baseline?.toFixed(0) }) }}</div>
       <div class="grid grid-cols-[repeat(auto-fill,minmax(80px,1fr))] gap-2">
+        <template v-if="!dayCells.length">
+          <Skeleton v-for="i in 14" :key="'sk' + i" class="h-[86px]" />
+        </template>
         <div
           v-for="c in dayCells"
           :key="c.date"

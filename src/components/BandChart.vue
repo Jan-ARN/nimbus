@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useElementSize } from '@vueuse/core'
 import type { EnsembleDay } from '@/lib/series'
 import { extent } from '@/lib/series'
 import { localeTag } from '@/i18n'
@@ -12,11 +13,15 @@ const props = defineProps<{
   reliableUntil?: number
 }>()
 
-const W = 900
-const H = 320
-const PAD = { l: 40, r: 12, t: 14, b: 40 }
-const innerW = W - PAD.l - PAD.r
-const innerH = H - PAD.t - PAD.b
+// viewBox = gemessene Pixelgröße → keine Verzerrung, scharfer Text auf Mobile.
+const wrap = ref<HTMLElement | null>(null)
+const { width } = useElementSize(wrap)
+const W = computed(() => Math.round(Math.max(320, width.value || 640)))
+const H = computed(() => (W.value < 480 ? 240 : W.value < 768 ? 290 : 320))
+
+const PAD = computed(() => ({ l: 34, r: 12, t: 14, b: 38 }))
+const innerW = computed(() => W.value - PAD.value.l - PAD.value.r)
+const innerH = computed(() => H.value - PAD.value.t - PAD.value.b)
 
 const bounds = computed<[number, number]>(() => {
   const vals = props.days.flatMap((d) => [d.p10, d.p90])
@@ -28,11 +33,11 @@ const bounds = computed<[number, number]>(() => {
 
 const n = computed(() => props.days.length)
 function x(i: number): number {
-  return PAD.l + (n.value <= 1 ? 0 : (i / (n.value - 1)) * innerW)
+  return PAD.value.l + (n.value <= 1 ? 0 : (i / (n.value - 1)) * innerW.value)
 }
 function y(v: number): number {
   const [lo, hi] = bounds.value
-  return PAD.t + innerH - ((v - lo) / (hi - lo || 1)) * innerH
+  return PAD.value.t + innerH.value - ((v - lo) / (hi - lo || 1)) * innerH.value
 }
 
 const bandPath = computed(() => {
@@ -54,25 +59,28 @@ const ticks = computed(() => {
   return out
 })
 
-const weekLabels = computed(() =>
-  props.days
-    .map((d, i) => ({ i, label: new Date(d.date).toLocaleDateString(localeTag(), { day: '2-digit', month: '2-digit' }) }))
-    .filter((_, i) => i % 5 === 0),
-)
+const weekLabels = computed(() => {
+  const all = props.days.map((d, i) => ({
+    i,
+    label: new Date(d.date).toLocaleDateString(localeTag(), { day: '2-digit', month: '2-digit' }),
+  }))
+  const stride = Math.max(1, Math.ceil(all.length / Math.max(3, Math.floor(W.value / 64))))
+  return all.filter((_, i) => i % stride === 0)
+})
 
 const reliableX = computed(() =>
   props.reliableUntil != null && props.reliableUntil < n.value ? x(props.reliableUntil) : null,
 )
 
-// Hover
+// Hover / Touch
 const svgRef = ref<SVGSVGElement | null>(null)
 const hoverI = ref<number | null>(null)
-function onMove(e: MouseEvent) {
+function onMove(e: PointerEvent) {
   const svg = svgRef.value
   if (!svg || n.value === 0) return
   const rect = svg.getBoundingClientRect()
-  const vx = ((e.clientX - rect.left) / rect.width) * W
-  const i = Math.round(((vx - PAD.l) / innerW) * (n.value - 1))
+  const vx = ((e.clientX - rect.left) / rect.width) * W.value
+  const i = Math.round(((vx - PAD.value.l) / innerW.value) * (n.value - 1))
   hoverI.value = Math.max(0, Math.min(n.value - 1, i))
 }
 const hover = computed(() => {
@@ -88,14 +96,15 @@ const hover = computed(() => {
 </script>
 
 <template>
-  <div class="band-wrap">
+  <div ref="wrap" class="band-wrap">
     <svg
       ref="svgRef"
       :viewBox="`0 0 ${W} ${H}`"
-      preserveAspectRatio="none"
+      :height="H"
       class="band"
-      @mousemove="onMove"
-      @mouseleave="hoverI = null"
+      @pointermove="onMove"
+      @pointerdown="onMove"
+      @pointerleave="hoverI = null"
     >
       <g class="grid">
         <template v-for="t in ticks" :key="t">
@@ -117,7 +126,7 @@ const hover = computed(() => {
       <!-- Unsicherheitsband -->
       <path :d="bandPath" class="band-fill" />
       <!-- Mittel -->
-      <path :d="meanPath" class="band-mean" fill="none" vector-effect="non-scaling-stroke" />
+      <path :d="meanPath" class="band-mean" fill="none" />
 
       <!-- Grenze "verlässlich" -->
       <g v-if="reliableX != null">
@@ -126,7 +135,7 @@ const hover = computed(() => {
       </g>
 
       <g class="xlabels">
-        <text v-for="w in weekLabels" :key="w.i" :x="x(w.i)" :y="H - 20" text-anchor="middle">
+        <text v-for="w in weekLabels" :key="w.i" :x="x(w.i)" :y="H - 18" text-anchor="middle">
           {{ w.label }}
         </text>
       </g>
@@ -148,15 +157,15 @@ const hover = computed(() => {
 <style scoped>
 .band-wrap {
   position: relative;
+  width: 100%;
 }
 .band {
   width: 100%;
-  height: 320px;
   display: block;
+  touch-action: pan-y;
 }
 .grid line {
   stroke: var(--border);
-  vector-effect: non-scaling-stroke;
 }
 .grid text,
 .xlabels text {
@@ -167,7 +176,6 @@ const hover = computed(() => {
 .baseline {
   stroke: var(--muted-foreground);
   stroke-dasharray: 5 4;
-  vector-effect: non-scaling-stroke;
 }
 .band-fill {
   fill: color-mix(in srgb, var(--primary) 20%, transparent);
@@ -181,7 +189,6 @@ const hover = computed(() => {
   stroke: var(--warn);
   opacity: 0.6;
   stroke-dasharray: 3 3;
-  vector-effect: non-scaling-stroke;
 }
 .reliable-label {
   fill: var(--warn);
@@ -189,7 +196,6 @@ const hover = computed(() => {
 }
 .crosshair {
   stroke: var(--muted-foreground);
-  vector-effect: non-scaling-stroke;
 }
 .chart-tip {
   position: absolute;

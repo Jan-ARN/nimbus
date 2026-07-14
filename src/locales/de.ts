@@ -1,6 +1,6 @@
 export default {
   nav: { models: 'Modelle', longRange: 'Langfrist', air: 'Luft' },
-  app: { title: 'Nimbus — Der Himmel über Köln', subtitle: 'Der Himmel über Köln', langLabel: 'Sprache' },
+  app: { title: 'Nimbus — Wetter im Detail', subtitle: 'Der Himmel über Köln', skyOver: 'Der Himmel über', langLabel: 'Sprache' },
   place: { label: 'Ort', add: 'Ort', search: 'Stadt suchen…', empty: 'Nichts gefunden.' },
   hero: {
     feels: 'Gefühlt',
@@ -22,7 +22,7 @@ export default {
     tempCourse: 'Temperaturverlauf',
     hourly: 'stündlich',
     modelsCount: 'Modelle',
-    outlook16: '16-Tage-Ausblick',
+    outlook16: '14-Tage-Ausblick',
     outlookSub: 'Was die Modelle gemeinsam sagen · Tag antippen für Details',
     loadingModels: 'lädt Modelldaten…',
     oneModel: '1 Modell',
@@ -44,7 +44,7 @@ export default {
     nextDays: 'nächste {n} Tage',
     highsVsToday: 'Höchstwerte {change}° gegenüber heute · Median aus 31 Wettersimulationen',
     infoText:
-      "So weit im Voraus geht's um die {dir}, nicht um genaue Grade. Ab etwa 16 Tagen wird die Vorhersage richtig unsicher.",
+      "So weit im Voraus geht's um die {dir}, nicht um genaue Grade. Ab etwa 14 Tagen wird die Vorhersage richtig unsicher.",
     infoDir: 'Richtung',
     highsOutlook: 'Höchstwerte-Ausblick',
     highsOutlookSub:

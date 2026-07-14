@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useQuery } from '@tanstack/vue-query'
+import { useQuery, keepPreviousData } from '@tanstack/vue-query'
 import { storeToRefs } from 'pinia'
 import { Droplet, ChevronDown } from 'lucide-vue-next'
-import PlaceSelector from '@/components/PlaceSelector.vue'
 import ConditionsHero from '@/components/ConditionsHero.vue'
+import Skeleton from '@/components/ui/Skeleton.vue'
 import MultiLineChart from '@/components/MultiLineChart.vue'
 import type { LineSeries } from '@/lib/chartTypes'
 import { usePlacesStore } from '@/stores/places'
@@ -31,11 +31,13 @@ const expandedDay = ref<string | null>(null)
 
 const query = useQuery({
   queryKey: computed(() => ['forecast', active.value.id, [...selectedModels.value].sort()]),
-  queryFn: () => fetchMultiModelForecast(active.value, selectedModels.value, 16),
+  queryFn: () => fetchMultiModelForecast(active.value, selectedModels.value, 14),
+  placeholderData: keepPreviousData,
 })
 const cond = useQuery({
   queryKey: computed(() => ['conditions', active.value.id]),
-  queryFn: () => fetchConditions(active.value, 16),
+  queryFn: () => fetchConditions(active.value, 14),
+  placeholderData: keepPreviousData,
 })
 
 const hourly = computed(() => (query.data.value ? extractHourly(query.data.value, selectedModels.value) : null))
@@ -112,11 +114,9 @@ function disagreeColor(d: number) {
   <div class="flex flex-col gap-6">
     <ConditionsHero />
 
-    <!-- Ort + Modelle -->
+    <!-- Modelle -->
     <section class="glass reveal p-5">
-      <div class="label mb-2">{{ $t('place.label') }}</div>
-      <PlaceSelector />
-      <div class="label mb-2 mt-4">{{ $t('compare.compareModels') }}</div>
+      <div class="label mb-2">{{ $t('compare.compareModels') }}</div>
       <div class="flex flex-wrap gap-2">
         <button
           v-for="m in WEATHER_MODELS"
@@ -143,7 +143,7 @@ function disagreeColor(d: number) {
         </div>
         <div class="flex overflow-hidden rounded-full border border-border">
           <button
-            v-for="r in [3, 7, 16]"
+            v-for="r in [3, 7, 14]"
             :key="r"
             class="px-3.5 py-1.5 font-mono text-xs transition-colors"
             :class="rangeDays === r ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'"
@@ -160,9 +160,7 @@ function disagreeColor(d: number) {
         unit="°"
         :now-iso="hourly?.time[nowIdx]"
       />
-      <div v-else class="grid h-52 place-items-center font-mono text-[13px] text-muted-foreground">
-        {{ $t('compare.loadingModels') }}
-      </div>
+      <Skeleton v-else class="h-[230px] w-full sm:h-[290px] lg:h-[340px]" />
     </section>
 
     <!-- Tagesübersicht -->
@@ -171,6 +169,18 @@ function disagreeColor(d: number) {
       <div class="label mb-4">{{ $t('compare.outlookSub') }}</div>
 
       <div class="flex flex-col">
+        <template v-if="!dailyRows.length">
+          <div
+            v-for="i in 8"
+            :key="i"
+            class="flex items-center gap-3 border-b border-border px-1 py-3 last:border-0"
+          >
+            <Skeleton class="h-4 w-20" />
+            <Skeleton class="h-5 w-5 rounded-full" />
+            <span class="flex-1" />
+            <Skeleton class="h-5 w-24" />
+          </div>
+        </template>
         <div v-for="row in dailyRows" :key="row.day" class="border-b border-border last:border-0">
           <button
             class="flex w-full items-center gap-3 rounded-md px-1 py-3 text-left transition-colors hover:bg-muted"

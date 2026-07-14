@@ -23,6 +23,7 @@ export const COLOGNE: Place = {
 }
 
 const STORAGE_KEY = 'wetter-koeln:places'
+const ACTIVE_KEY = 'wetter-koeln:active'
 
 function load(): Place[] {
   try {
@@ -35,9 +36,15 @@ function load(): Place[] {
   }
 }
 
+function loadActive(known: Place[]): string {
+  const saved = localStorage.getItem(ACTIVE_KEY)
+  return saved && known.some((p) => p.id === saved) ? saved : COLOGNE.id
+}
+
 export const usePlacesStore = defineStore('places', () => {
   const extra = ref<Place[]>(load())
-  const activeId = ref<string>(COLOGNE.id)
+  // Zuletzt gewählter Ort überlebt den Reload (nur wenn er noch existiert).
+  const activeId = ref<string>(loadActive([COLOGNE, ...extra.value]))
 
   const places = computed<Place[]>(() => [COLOGNE, ...extra.value])
   const active = computed<Place>(
@@ -69,6 +76,7 @@ export const usePlacesStore = defineStore('places', () => {
     (val) => localStorage.setItem(STORAGE_KEY, JSON.stringify(val)),
     { deep: true },
   )
+  watch(activeId, (id) => localStorage.setItem(ACTIVE_KEY, id))
 
   return { places, extra, active, activeId, addPlace, removePlace, setActive }
 })
