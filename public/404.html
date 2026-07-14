@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nimbus</title>
+    <style>
+      html { background: #080d18; }
+    </style>
+    <!--
+      SPA-Deep-Link-Fix für GitHub Pages (Technik von rafgraph/spa-github-pages).
+      GitHub Pages liefert für unbekannte Pfade (z. B. /nimbus/history bei Direktaufruf
+      oder Reload) diese 404.html aus. Statt hier die App unter einem 404-Status zu
+      rendern (fragil: CDN cacht den 404, Default-404-Fenster während Deploys), leiten
+      wir auf /nimbus/?/history um — das ist index.html unter einem echten 200. Der
+      Decoder in index.html stellt die saubere URL danach wieder her.
+      pathSegmentsToKeep = 1 → das Basissegment „nimbus" bleibt erhalten.
+    -->
+    <script type="text/javascript">
+      var pathSegmentsToKeep = 1
+      var l = window.location
+      l.replace(
+        l.protocol +
+          '//' +
+          l.hostname +
+          (l.port ? ':' + l.port : '') +
+          l.pathname
+            .split('/')
+            .slice(0, 1 + pathSegmentsToKeep)
+            .join('/') +
+          '/?/' +
+          l.pathname
+            .slice(1)
+            .split('/')
+            .slice(pathSegmentsToKeep)
+            .join('/')
+            .replace(/&/g, '~and~') +
+          (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+          l.hash,
+      )
+    </script>
+  </head>
+  <body></body>
+</html>

@@ -26,9 +26,9 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-      # SPA-Fallback: 404 → index.html, damit Deep-Links (/outlook, /air) auch bei
-      # Direktaufruf/Reload funktionieren.
-      - run: cp dist/index.html dist/404.html
+      # SPA-Deep-Link-Fallback liegt jetzt als public/404.html im Repo (Redirect auf
+      # /?/pfad → 200) und wird von Vite nach dist/404.html kopiert — kein cp mehr nötig
+      # (ein cp würde die committete 404.html sogar überschreiben).
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
