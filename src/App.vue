@@ -12,6 +12,7 @@ import PlaceSelector from '@/components/PlaceSelector.vue'
 import { usePlacesStore } from '@/stores/places'
 import { useSkyStore } from '@/stores/sky'
 import { fetchConditions } from '@/api/weather'
+import { maybeSnapshotToday } from '@/lib/snapshots'
 
 // Globaler Himmel: das ganze App-Theme folgt der aktuellen Lage des aktiven Orts,
 // auf jeder Seite (nicht nur wo die Conditions-Hero steht). Gleicher Query-Key
@@ -29,6 +30,9 @@ watch(
   (cur) => sky.setFromCurrent(cur as Record<string, number | string> | undefined),
   { immediate: true },
 )
+// Prognose-Samen: 1× pro Ort und Tag alle Modelle mitschreiben (Bestenliste/
+// Konvergenz-Wiedergabe wachsen mit der Zeit). Läuft im Hintergrund, deduped.
+watch(active, (p) => void maybeSnapshotToday(p), { immediate: true })
 const { t, locale } = useI18n()
 // Dokumenttitel folgt der aktiven Sprache.
 watchEffect(() => {

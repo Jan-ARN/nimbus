@@ -154,6 +154,46 @@ export function aggregateEnsemble(res: EnsembleResponse): EnsembleDay[] {
   return out.sort((a, b) => a.date.localeCompare(b.date))
 }
 
+// --- Ensemble → einzelne Member-Bahnen (für animierte HOPs) ------------------
+// Wie aggregateEnsemble, aber OHNE die Member zu Perzentilen zu verdichten:
+// je Member die Tages-Höchstwerte, ausgerichtet auf eine gemeinsame Tagesliste.
+// So lässt sich jeder Member als eigene Linie zeichnen — die Basis für
+// „Hypothetical Outcome Plots" (nacheinander aufblitzende Szenarien).
+export interface EnsembleMembers {
+  dates: string[] // ISO-Tage, aufsteigend
+  members: (number | null)[][] // members[k][dayIndex] = Tages-Höchstwert
+}
+
+export function ensembleMembers(res: EnsembleResponse): EnsembleMembers {
+  const h = res.hourly ?? {}
+  const time = asStr(h.time)
+  if (time.length === 0) return { dates: [], members: [] }
+
+  const memberKeys = Object.keys(h).filter((k) => /^temperature_2m(_member\d+)?$/.test(k))
+  const series = memberKeys.map((k) => asNums(h[k]))
+
+  const dayIdx = new Map<string, number[]>()
+  for (let i = 0; i < time.length; i++) {
+    const day = time[i].slice(0, 10)
+    const bucket = dayIdx.get(day)
+    if (bucket) bucket.push(i)
+    else dayIdx.set(day, [i])
+  }
+  const dates = [...dayIdx.keys()].sort((a, b) => a.localeCompare(b))
+
+  const members = series.map((m) =>
+    dates.map((d) => {
+      let hi = -Infinity
+      for (const i of dayIdx.get(d)!) {
+        const v = m[i]
+        if (v != null && !Number.isNaN(v) && v > hi) hi = v
+      }
+      return hi > -Infinity ? hi : null
+    }),
+  )
+  return { dates, members }
+}
+
 // Tages-Höchst- ODER -Tiefstwert je Kalendertag aus einer Stundenreihe
 // (nulls ignorieren). Genutzt für den Prognose-Güte-Vergleich: aus stündlichen
 // Läufen wird je Tag der Höchst-/Tiefstwert wie in einer Wetter-App.

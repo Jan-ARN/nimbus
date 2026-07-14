@@ -1,14 +1,15 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useQuery, keepPreviousData } from '@tanstack/vue-query'
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
 import { TrendingUp, TrendingDown, MoveRight, Info, ArrowUp, ArrowDown, Equal } from 'lucide-vue-next'
 import BandChart from '@/components/BandChart.vue'
+import EnsembleHopsChart from '@/components/EnsembleHopsChart.vue'
 import Spinner from '@/components/ui/Spinner.vue'
 import { usePlacesStore } from '@/stores/places'
 import { fetchEnsemble } from '@/api/weather'
-import { aggregateEnsemble } from '@/lib/series'
+import { aggregateEnsemble, ensembleMembers } from '@/lib/series'
 import { localeTag } from '@/i18n'
 
 const { t } = useI18n()
@@ -25,6 +26,21 @@ const query = useQuery({
 })
 
 const days = computed(() => (query.data.value ? aggregateEnsemble(query.data.value) : []))
+
+// Ansicht: geglättetes Band ODER einzelne Läufe (animierte HOPs).
+type OutlookView = 'band' | 'members'
+const view = ref<OutlookView>('band')
+
+// Member-Bahnen auf die days-Reihenfolge (nach Datum) ausrichten.
+const memberSeries = computed<(number | null)[][]>(() => {
+  if (!query.data.value) return []
+  const em = ensembleMembers(query.data.value)
+  const idxByDate = new Map(em.dates.map((d, i) => [d, i]))
+  return em.members.map((m) => days.value.map((d) => {
+    const j = idxByDate.get(d.date)
+    return j == null ? null : m[j]
+  }))
+})
 
 // „Heute" = der heutige erwartete Höchstwert (erster Tag, Median), NICHT ein
 // Mehrtages-Mittel — sonst sind alle Abweichungen systematisch zu klein.
@@ -125,12 +141,33 @@ function fmtCellDate(iso: string): string {
       </i18n-t>
     </div>
 
-    <!-- Band-Chart -->
+    <!-- Band-Chart / animierte Läufe -->
     <section class="glass reveal p-5">
-      <h2 class="font-display text-[22px] font-semibold">{{ $t('longRange.highsOutlook') }}</h2>
-      <div class="label mb-4">{{ $t('longRange.highsOutlookSub') }}</div>
+      <div class="mb-3 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 class="font-display text-[22px] font-semibold">{{ $t('longRange.highsOutlook') }}</h2>
+          <div class="label">{{ view === 'band' ? $t('longRange.highsOutlookSub') : $t('longRange.hopsSub') }}</div>
+        </div>
+        <div class="flex shrink-0 overflow-hidden rounded-full border border-border">
+          <button
+            v-for="v in (['band', 'members'] as const)"
+            :key="v"
+            class="px-3.5 py-1.5 text-xs font-medium transition-colors"
+            :class="view === v ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'"
+            @click="view = v"
+          >
+            {{ $t(v === 'band' ? 'longRange.viewBand' : 'longRange.viewMembers') }}
+          </button>
+        </div>
+      </div>
       <transition name="sk-fade" mode="out-in">
-        <BandChart v-if="days.length" :days="days" :baseline="baseline" :reliable-until="reliableUntil" />
+        <BandChart v-if="days.length && view === 'band'" :days="days" :baseline="baseline" :reliable-until="reliableUntil" />
+        <EnsembleHopsChart
+          v-else-if="days.length && view === 'members'"
+          :days="days"
+          :members="memberSeries"
+          :reliable-until="reliableUntil"
+        />
         <div v-else class="grid h-[240px] place-items-center sm:h-[290px] lg:h-[320px]"><Spinner /></div>
       </transition>
     </section>

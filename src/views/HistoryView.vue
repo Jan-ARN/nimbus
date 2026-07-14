@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useQuery, keepPreviousData } from '@tanstack/vue-query'
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
@@ -10,6 +10,15 @@ import type { LineSeries } from '@/lib/chartTypes'
 import { usePlacesStore } from '@/stores/places'
 import { fetchArchive, fetchForecastRuns, LEAD_DAYS } from '@/api/weather'
 import { dailyExtremeByDate, type NumArr } from '@/lib/series'
+import {
+  metrics as calcMetrics,
+  mse as calcMse,
+  skillScore,
+  causalBiasCorrect,
+  persistencePairs,
+  type DatedPair,
+} from '@/lib/verify'
+import { snapshotProgress } from '@/lib/snapshots'
 import { fmtTemp } from '@/lib/format'
 import { localeTag } from '@/i18n'
 
@@ -17,6 +26,10 @@ const { t } = useI18n()
 
 const places = usePlacesStore()
 const { active } = storeToRefs(places)
+
+// „Samen"-Fortschritt: wie viele Tage Modell-Prognosen schon gebankt sind.
+const snapDays = ref(0)
+watch(active, (p) => { snapDays.value = snapshotProgress(p.id).days }, { immediate: true })
 
 type Metric = 'max' | 'min'
 const metric = ref<Metric>('max') // Höchst- vs. Tiefstwert
@@ -105,7 +118,28 @@ const biasText = computed(() => {
 })
 const metricWord = computed(() => t(metric.value === 'max' ? 'history.metricHighWord' : 'history.metricLowWord'))
 
-// Overlay: beobachtet vs. Prognose der gewählten Vorlaufzeit.
+// --- Selbst-Korrektur: den gemessenen Bias ehrlich (kausal) herausrechnen -----
+const datedRows = computed<DatedPair[]>(() =>
+  rows.value.map((r) => ({ date: r.date, forecast: r.forecast, actual: r.actualVal })),
+)
+const corrected = computed(() => causalBiasCorrect(datedRows.value, lead.value))
+
+// Roh- vs. korrigierte Güte — verglichen NUR auf den Tagen, die überhaupt
+// korrigiert werden konnten (faire, gleiche Stichprobe), plus Skill gg. Persistenz.
+const correction = computed(() => {
+  const cs = corrected.value.filter((c) => c.corrected != null)
+  if (cs.length < 5) return null
+  const raw = calcMetrics(cs.map((c) => ({ forecast: c.forecast as number, actual: c.actual })))
+  const corr = calcMetrics(cs.map((c) => ({ forecast: c.corrected as number, actual: c.actual })))
+  if (!raw || !corr) return null
+  const persByDate = new Map(persistencePairs(datedRows.value, lead.value).map((p) => [p.date, p]))
+  const persSub = cs.map((c) => persByDate.get(c.date)).filter((p): p is NonNullable<typeof p> => p != null)
+  const skill = persSub.length ? skillScore(calcMse(cs.map((c) => ({ forecast: c.corrected as number, actual: c.actual }))), calcMse(persSub)) : NaN
+  const pct = raw.mae > 0 ? Math.round((1 - corr.mae / raw.mae) * 100) : 0
+  return { rawMae: raw.mae, corrMae: corr.mae, n: cs.length, pct, skill, better: corr.mae < raw.mae - 0.05 }
+})
+
+// Overlay: beobachtet vs. Prognose der gewählten Vorlaufzeit (+ bias-korrigiert).
 const chart = computed(() => {
   if (!rows.value.length) return null
   const time = rows.value.map((r) => r.date)
@@ -113,6 +147,15 @@ const chart = computed(() => {
     { key: 'actual', label: t('history.actual'), color: '#eef2fa', values: rows.value.map((r) => r.actualVal) },
     { key: 'forecast', label: t('history.forecastLead', { n: lead.value }), color: 'var(--primary)', values: rows.value.map((r) => r.forecast) },
   ]
+  if (correction.value) {
+    const byDate = new Map(corrected.value.map((c) => [c.date, c.corrected]))
+    series.push({
+      key: 'corrected',
+      label: t('history.correctedLine'),
+      color: '#6fe0b0',
+      values: rows.value.map((r) => byDate.get(r.date) ?? null),
+    })
+  }
   return { time, series }
 })
 
@@ -206,11 +249,44 @@ const loading = computed(() => !rows.value.length)
       <div class="mb-3 flex flex-wrap gap-4 text-[12px]">
         <span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full" style="background: #eef2fa" />{{ $t('history.actual') }}</span>
         <span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full" style="background: var(--primary)" />{{ $t('history.forecastLead', { n: lead }) }}</span>
+        <span v-if="correction" class="inline-flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full" style="background: #6fe0b0" />{{ $t('history.correctedLine') }}</span>
       </div>
       <transition name="sk-fade" mode="out-in">
         <MultiLineChart v-if="chart" :time="chart.time" :series="chart.series" unit="°" />
         <div v-else class="grid h-[230px] place-items-center sm:h-[290px] lg:h-[340px]"><Spinner /></div>
       </transition>
+    </section>
+
+    <!-- Selbst-Korrektur: den gemessenen Bias herausrechnen (kausal, ehrlich) -->
+    <section class="glass reveal p-5">
+      <h2 class="font-display text-[22px] font-semibold">{{ $t('history.correctedTitle') }}</h2>
+      <div class="label mb-4">{{ $t('history.correctedSub') }}</div>
+      <template v-if="correction">
+        <div class="flex flex-wrap items-end gap-x-8 gap-y-3">
+          <div>
+            <div class="label">{{ $t('history.forecastLead', { n: lead }) }}</div>
+            <div class="readout text-2xl" style="color: var(--primary)">±{{ correction.rawMae.toFixed(1) }}°</div>
+          </div>
+          <div>
+            <div class="label">{{ $t('history.correctedLine') }}</div>
+            <div class="readout text-2xl" style="color: #6fe0b0">±{{ correction.corrMae.toFixed(1) }}°</div>
+          </div>
+          <div v-if="Number.isFinite(correction.skill)" class="text-[13px] text-muted-foreground">
+            {{ correction.skill >= 0
+              ? $t('history.correctedSkill', { v: Math.round(correction.skill * 100) })
+              : $t('history.correctedSkillNeg', { v: Math.abs(Math.round(correction.skill * 100)) }) }}
+          </div>
+        </div>
+        <p class="mt-4 text-[13px] text-muted-foreground">
+          {{ correction.better
+            ? $t('history.correctedResultBetter', { raw: correction.rawMae.toFixed(1), corr: correction.corrMae.toFixed(1), pct: correction.pct, n: correction.n })
+            : $t('history.correctedResultFlat', { raw: correction.rawMae.toFixed(1), corr: correction.corrMae.toFixed(1), n: correction.n }) }}
+        </p>
+      </template>
+      <p v-else class="text-[13px] text-muted-foreground">{{ $t('history.correctedNone') }}</p>
+      <p class="mt-4 border-t border-border pt-3 text-[12px] text-muted-foreground">
+        {{ snapDays > 0 ? $t('history.snapshotCollecting', { n: snapDays }) : $t('history.snapshotStart') }}
+      </p>
     </section>
 
     <!-- Tag-für-Tag: wärmer/kühler als gedacht -->
