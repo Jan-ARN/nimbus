@@ -6,6 +6,7 @@ import { storeToRefs } from 'pinia'
 import { TrendingUp, TrendingDown, MoveRight, Info, ArrowUp, ArrowDown, Equal } from 'lucide-vue-next'
 import BandChart from '@/components/BandChart.vue'
 import Skeleton from '@/components/ui/Skeleton.vue'
+import ChartSkeleton from '@/components/ui/ChartSkeleton.vue'
 import { usePlacesStore } from '@/stores/places'
 import { fetchEnsemble } from '@/api/weather'
 import { aggregateEnsemble } from '@/lib/series'
@@ -129,8 +130,10 @@ function fmtCellDate(iso: string): string {
     <section class="glass reveal p-5">
       <h2 class="font-display text-[22px] font-semibold">{{ $t('longRange.highsOutlook') }}</h2>
       <div class="label mb-4">{{ $t('longRange.highsOutlookSub') }}</div>
-      <BandChart v-if="days.length" :days="days" :baseline="baseline" :reliable-until="reliableUntil" />
-      <Skeleton v-else class="h-[240px] w-full sm:h-[290px] lg:h-[320px]" />
+      <transition name="sk-fade" mode="out-in">
+        <BandChart v-if="days.length" :days="days" :baseline="baseline" :reliable-until="reliableUntil" />
+        <ChartSkeleton v-else />
+      </transition>
     </section>
 
     <!-- Trend-Kacheln -->

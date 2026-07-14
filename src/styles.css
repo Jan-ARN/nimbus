@@ -196,6 +196,17 @@
   border-radius: 6px;
 }
 
+/* Sanftes Überblenden Skeleton → Inhalt (getrennt vom Router-„fade" in App.vue).
+   Läuft NACH dem einmaligen .reveal der Karte, also keine doppelte Bewegung. */
+.sk-fade-enter-active,
+.sk-fade-leave-active {
+  transition: opacity 0.32s ease;
+}
+.sk-fade-enter-from,
+.sk-fade-leave-to {
+  opacity: 0;
+}
+
 .reveal {
   animation: rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
 }

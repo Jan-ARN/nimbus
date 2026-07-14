@@ -5,6 +5,7 @@ import { storeToRefs } from 'pinia'
 import { Droplet, ChevronDown } from 'lucide-vue-next'
 import ConditionsHero from '@/components/ConditionsHero.vue'
 import Skeleton from '@/components/ui/Skeleton.vue'
+import ChartSkeleton from '@/components/ui/ChartSkeleton.vue'
 import MultiLineChart from '@/components/MultiLineChart.vue'
 import type { LineSeries } from '@/lib/chartTypes'
 import { usePlacesStore } from '@/stores/places'
@@ -153,14 +154,16 @@ function disagreeColor(d: number) {
           </button>
         </div>
       </div>
-      <MultiLineChart
-        v-if="chartData && chartData.time.length"
-        :time="chartData.time"
-        :series="chartData.series"
-        unit="°"
-        :now-iso="hourly?.time[nowIdx]"
-      />
-      <Skeleton v-else class="h-[230px] w-full sm:h-[290px] lg:h-[340px]" />
+      <transition name="sk-fade" mode="out-in">
+        <MultiLineChart
+          v-if="chartData && chartData.time.length"
+          :time="chartData.time"
+          :series="chartData.series"
+          unit="°"
+          :now-iso="hourly?.time[nowIdx]"
+        />
+        <ChartSkeleton v-else />
+      </transition>
     </section>
 
     <!-- Tagesübersicht -->
