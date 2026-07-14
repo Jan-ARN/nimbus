@@ -1,58 +1,53 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 170" width="1200" height="170" role="img" aria-label="a forecast is a range, not a number — median and spread from 31 simulations" font-family="'Helvetica Neue',Arial,sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 214" width="1200" height="214" role="img" aria-label="Prediction is very difficult, especially about the future — Niels Bohr" font-family="'Hanken Grotesk','Helvetica Neue',Arial,sans-serif">
   <defs>
     <linearGradient id="skyF" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#0d1a2b"/>
-      <stop offset="0.6" stop-color="#162936"/>
-      <stop offset="1" stop-color="#243f52"/>
+      <stop offset="0" stop-color="#070c16"/>
+      <stop offset="0.6" stop-color="#101d33"/>
+      <stop offset="1" stop-color="#1c3149"/>
     </linearGradient>
     <radialGradient id="glowF" cx="50%" cy="50%" r="50%">
-      <stop offset="0" stop-color="#f0c880" stop-opacity="0.8"/>
-      <stop offset="0.5" stop-color="#f0c880" stop-opacity="0.22"/>
-      <stop offset="1" stop-color="#f0c880" stop-opacity="0"/>
+      <stop offset="0" stop-color="#ffb454" stop-opacity="0.7"/>
+      <stop offset="0.5" stop-color="#ff9d5c" stop-opacity="0.2"/>
+      <stop offset="1" stop-color="#ff9d5c" stop-opacity="0"/>
     </radialGradient>
     <linearGradient id="bandF" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#7fa9d0" stop-opacity="0"/>
-      <stop offset="0.15" stop-color="#7fa9d0" stop-opacity="0.28"/>
-      <stop offset="1" stop-color="#7fa9d0" stop-opacity="0.16"/>
+      <stop offset="0" stop-color="#6ea8ff" stop-opacity="0"/>
+      <stop offset="0.15" stop-color="#6ea8ff" stop-opacity="0.26"/>
+      <stop offset="1" stop-color="#6ea8ff" stop-opacity="0.12"/>
     </linearGradient>
-    <clipPath id="frameF"><rect width="1200" height="170"/></clipPath>
+    <clipPath id="frameF"><rect width="1200" height="214"/></clipPath>
   </defs>
 
   <g clip-path="url(#frameF)">
-    <rect width="1200" height="170" fill="url(#skyF)"/>
+    <rect width="1200" height="214" fill="url(#skyF)"/>
 
-    <!-- faint stars, top-left -->
+    <!-- faint stars -->
     <g fill="#dce6ee">
-      <circle cx="150" cy="26" r="1.0" opacity="0.7"><animate attributeName="opacity" values="0.7;0.2;0.7" dur="5s" repeatCount="indefinite"/></circle>
-      <circle cx="320" cy="40" r="0.8" opacity="0.45"/>
-      <circle cx="500" cy="22" r="0.9" opacity="0.6"><animate attributeName="opacity" values="0.6;0.2;0.6" dur="6.4s" repeatCount="indefinite"/></circle>
-      <circle cx="240" cy="58" r="0.7" opacity="0.4"/>
+      <circle cx="150" cy="30" r="1" opacity=".65"><animate attributeName="opacity" values=".65;.2;.65" dur="5s" repeatCount="indefinite"/></circle>
+      <circle cx="330" cy="44" r=".8" opacity=".42"/>
+      <circle cx="900" cy="28" r=".9" opacity=".55"><animate attributeName="opacity" values=".55;.18;.55" dur="6.4s" repeatCount="indefinite"/></circle>
+      <circle cx="1050" cy="52" r=".7" opacity=".4"/>
     </g>
 
     <!-- sun sinking at the horizon, right -->
-    <circle cx="1020" cy="150" r="110" fill="url(#glowF)"/>
-    <circle cx="1020" cy="150" r="22" fill="#f0c880"/>
+    <circle cx="1040" cy="180" r="120" fill="url(#glowF)"/>
+    <circle cx="1040" cy="180" r="22" fill="#ffb454" opacity=".9"/>
 
-    <!-- the spread band: uncertainty widening to the right -->
-    <path d="M110 86 C420 84 720 80 1160 44 L1160 128 C720 112 420 96 110 92 Z" fill="url(#bandF)"/>
-
-    <!-- ensemble members fanning out from "now" -->
-    <g stroke="#7fa9d0" stroke-width="1.3" fill="none" opacity="0.5">
-      <path d="M110 89 C420 82 720 70 1160 44"/>
-      <path d="M110 89 C420 86 720 82 1160 76"/>
-      <path d="M110 89 C420 90 720 100 1160 118"/>
-      <path d="M110 89 C420 94 720 112 1160 140"/>
+    <!-- the p10–p90 band + members fanning out from "now", low across the frame -->
+    <path d="M90 150 C420 148 760 144 1160 116 L1160 176 C760 164 420 156 90 154 Z" fill="url(#bandF)"/>
+    <g stroke="#7fa9d0" stroke-width="1.2" fill="none" opacity=".42">
+      <path d="M90 152 C420 144 760 130 1160 116"/>
+      <path d="M90 152 C420 150 760 148 1160 150"/>
+      <path d="M90 152 C420 154 760 164 1160 176"/>
     </g>
-    <g stroke="#f0c880" stroke-width="1.5" fill="none" opacity="0.8">
-      <path d="M110 89 C420 84 720 78 1160 62"/>
-    </g>
-    <!-- median line + "now" node -->
-    <path d="M110 89 C420 88 720 88 1160 90" stroke="#eaf2ff" stroke-width="1.8" fill="none" opacity="0.9"/>
-    <circle cx="110" cy="89" r="4" fill="#eaf2ff"/>
-    <text x="110" y="74" text-anchor="middle" fill="#93a8c2" font-size="10" font-weight="600" letter-spacing="2" style="text-transform:uppercase">now</text>
+    <path d="M90 152 C420 150 760 152 1160 152" stroke="#eaf2ff" stroke-width="1.6" fill="none" opacity=".85"/>
+    <circle cx="90" cy="152" r="4" fill="#eaf2ff"/>
 
-    <!-- the creed -->
-    <text x="110" y="146" fill="#eaf2ff" font-size="17" font-weight="600" letter-spacing="0.2">A forecast is a range, not a number.</text>
-    <text x="110" y="164" fill="#5f7590" font-size="12.5" font-weight="500" letter-spacing="1.5">MEDIAN AND SPREAD FROM 31 SIMULATIONS</text>
+    <!-- a fitting quote -->
+    <text x="600" y="78" text-anchor="middle" fill="#eef2fa" font-size="24" font-weight="600" letter-spacing="0.2" font-style="italic">&#8220;Prediction is very difficult, especially about the future.&#8221;</text>
+    <text x="600" y="106" text-anchor="middle" fill="#8fa4c0" font-size="14" font-weight="600" letter-spacing="2.5" style="text-transform:uppercase">— Niels Bohr</text>
+
+    <!-- the technical creed -->
+    <text x="600" y="200" text-anchor="middle" fill="#5f7590" font-size="12" font-weight="500" letter-spacing="1.6">MEDIAN &#183; p10&#8211;p90 SPREAD &#183; 31 GEFS MEMBERS &#183; RELIABLE TO ~14 DAYS, TENDENCY TO 35</text>
   </g>
 </svg>
