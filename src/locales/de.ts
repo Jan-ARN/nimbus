@@ -50,7 +50,15 @@ export default {
     highsOutlookSub:
       'Erwartete Tages-Höchsttemperatur · das Band zeigt, wie sicher — je breiter, desto unsicherer',
     viewBand: 'Band',
+    viewMeteogram: 'Meteogramm',
     viewMembers: 'Szenarien',
+    mgSub:
+      'Box = mittlere Hälfte der Läufe, Antenne = 10.–90. Perzentil, Punkte = alle 31 Läufe — teilen sie sich auf, zeigt das ein echtes Entweder-oder',
+    mgCalloutSplit:
+      'Am {day} teilt sich das Ensemble in zwei Lager: ~{low}° gegen ~{high}° ({pct}% der Läufe im wärmeren) — ein echtes Entweder-oder, das ein glattes Band verstecken würde.',
+    mgCalloutAgree:
+      'Die Läufe liegen im verlässlichen Fenster dicht beieinander — kein Auseinanderdriften in zwei Lager. Hohe Übereinstimmung.',
+    mgSplitTip: 'Zwei Lager: ~{low}° / ~{high}°',
     hopsSub:
       'Jede aufblitzende Linie ist einer der Ensemble-Läufe — je stärker sie streuen, desto unsicherer der Tag',
     hopsPlay: 'Abspielen',

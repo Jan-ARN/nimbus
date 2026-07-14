@@ -6,10 +6,11 @@ import { storeToRefs } from 'pinia'
 import { TrendingUp, TrendingDown, MoveRight, Info, ArrowUp, ArrowDown, Equal } from 'lucide-vue-next'
 import BandChart from '@/components/BandChart.vue'
 import EnsembleHopsChart from '@/components/EnsembleHopsChart.vue'
+import EnsembleMeteogramChart from '@/components/EnsembleMeteogramChart.vue'
 import Spinner from '@/components/ui/Spinner.vue'
 import { usePlacesStore } from '@/stores/places'
 import { fetchEnsemble } from '@/api/weather'
-import { aggregateEnsemble, ensembleMembers } from '@/lib/series'
+import { aggregateEnsemble, ensembleMembers, bimodalSplit } from '@/lib/series'
 import { localeTag } from '@/i18n'
 
 const { t } = useI18n()
@@ -27,8 +28,8 @@ const query = useQuery({
 
 const days = computed(() => (query.data.value ? aggregateEnsemble(query.data.value) : []))
 
-// Ansicht: geglättetes Band ODER einzelne Läufe (animierte HOPs).
-type OutlookView = 'band' | 'members'
+// Ansicht: geglättetes Band · Meteogramm (Box-Whisker + Punktstreu) · einzelne Läufe (HOPs).
+type OutlookView = 'band' | 'meteogram' | 'members'
 const view = ref<OutlookView>('band')
 
 // Member-Bahnen auf die days-Reihenfolge (nach Datum) ausrichten.
@@ -73,6 +74,26 @@ const reliableUntil = computed(() => {
     (d) => (Date.now() - new Date(d.date).getTime()) / 86_400_000 < -RELIABLE_DAYS,
   )
   return idx === -1 ? days.value.length : idx
+})
+
+// Erster Tag im verlässlichen Fenster, an dem das Ensemble in zwei Lager zerfällt
+// (steuert den Meteogramm-Hinweis). null = noch keine Daten; sonst mit/ohne Split.
+const mgSplit = computed(() => {
+  if (!days.value.length) return null
+  const shown = days.value.slice(0, reliableUntil.value || days.value.length)
+  for (const d of shown) {
+    const b = bimodalSplit(d.highs)
+    if (b.isBimodal) {
+      return {
+        split: true as const,
+        day: new Date(d.date).toLocaleDateString(localeTag(), { weekday: 'long', day: '2-digit', month: '2-digit' }),
+        low: Math.round(b.lowMean),
+        high: Math.round(b.highMean),
+        pct: Math.round((1 - b.lowFrac) * 100), // Anteil im wärmeren Lager
+      }
+    }
+  }
+  return { split: false as const }
 })
 
 // Jeden Tag zeigen (früher jeder 3. → der heißeste Tag konnte übersprungen
@@ -146,22 +167,40 @@ function fmtCellDate(iso: string): string {
       <div class="mb-3 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 class="font-display text-[22px] font-semibold">{{ $t('longRange.highsOutlook') }}</h2>
-          <div class="label">{{ view === 'band' ? $t('longRange.highsOutlookSub') : $t('longRange.hopsSub') }}</div>
+          <div class="label">{{ view === 'band' ? $t('longRange.highsOutlookSub') : view === 'meteogram' ? $t('longRange.mgSub') : $t('longRange.hopsSub') }}</div>
         </div>
         <div class="flex shrink-0 overflow-hidden rounded-full border border-border">
           <button
-            v-for="v in (['band', 'members'] as const)"
+            v-for="v in (['band', 'meteogram', 'members'] as const)"
             :key="v"
-            class="px-3.5 py-1.5 text-xs font-medium transition-colors"
+            class="px-3 py-1.5 text-xs font-medium transition-colors"
             :class="view === v ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'"
             @click="view = v"
           >
-            {{ $t(v === 'band' ? 'longRange.viewBand' : 'longRange.viewMembers') }}
+            {{ $t(v === 'band' ? 'longRange.viewBand' : v === 'meteogram' ? 'longRange.viewMeteogram' : 'longRange.viewMembers') }}
           </button>
         </div>
       </div>
+
+      <!-- Meteogramm-Hinweis: Lager-Split (ehrlich, auch wenn Einigkeit herrscht) -->
+      <div
+        v-if="view === 'meteogram' && mgSplit"
+        class="mb-3 flex items-start gap-2 rounded-md border px-4 py-2.5 text-[13px]"
+        :class="mgSplit.split ? 'border-[color-mix(in_srgb,var(--warn)_45%,transparent)] bg-[color-mix(in_srgb,var(--warn)_10%,transparent)] text-foreground' : 'border-border bg-[color-mix(in_srgb,var(--cool)_8%,transparent)] text-muted-foreground'"
+      >
+        <span>
+          {{ mgSplit.split
+            ? $t('longRange.mgCalloutSplit', { day: mgSplit.day, low: mgSplit.low, high: mgSplit.high, pct: mgSplit.pct })
+            : $t('longRange.mgCalloutAgree') }}
+        </span>
+      </div>
       <transition name="sk-fade" mode="out-in">
         <BandChart v-if="days.length && view === 'band'" :days="days" :baseline="baseline" :reliable-until="reliableUntil" />
+        <EnsembleMeteogramChart
+          v-else-if="days.length && view === 'meteogram'"
+          :days="days"
+          :reliable-until="reliableUntil"
+        />
         <EnsembleHopsChart
           v-else-if="days.length && view === 'members'"
           :days="days"

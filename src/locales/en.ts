@@ -50,7 +50,15 @@ export default {
     highsOutlookSub:
       'Expected daily high · the band shows how certain — the wider, the more uncertain',
     viewBand: 'Band',
+    viewMeteogram: 'Meteogram',
     viewMembers: 'Scenarios',
+    mgSub:
+      'Box = middle half of the runs, whisker = 10th–90th percentile, dots = all 31 runs — when they split apart, that is a real either/or',
+    mgCalloutSplit:
+      'On {day} the ensemble splits into two camps: ~{low}° vs ~{high}° ({pct}% of runs in the warmer one) — a genuine either/or a smooth band would hide.',
+    mgCalloutAgree:
+      'Within the reliable window the runs stay tightly grouped — no split into two camps. Strong agreement.',
+    mgSplitTip: 'Two camps: ~{low}° / ~{high}°',
     hopsSub:
       'Each flickering line is one of the ensemble runs — the more they scatter, the less certain the day',
     hopsPlay: 'Play',

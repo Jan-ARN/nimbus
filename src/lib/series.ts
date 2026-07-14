@@ -92,9 +92,12 @@ export interface EnsembleDay {
   median: number // erwarteter Tages-Höchstwert (Median der Member-Höchstwerte) — robust gg. Ausreißer
   mean: number // Mittel der Member-Höchstwerte (kann von wenigen warmen Läufen verzerrt werden)
   p10: number // 10. Perzentil der Member-Höchstwerte (kühleres Szenario)
+  p25: number // 25. Perzentil (untere Box-Kante im Meteogramm)
+  p75: number // 75. Perzentil (obere Box-Kante im Meteogramm)
   p90: number // 90. Perzentil der Member-Höchstwerte (wärmeres Szenario)
   min: number
   max: number
+  highs: number[] // alle Member-Höchstwerte des Tages (roh) — für Punktstreu & Bimodalität
 }
 
 function percentile(sorted: number[], p: number): number {
@@ -146,9 +149,12 @@ export function aggregateEnsemble(res: EnsembleResponse): EnsembleDay[] {
       median: percentile(sorted, 0.5),
       mean,
       p10: percentile(sorted, 0.1),
+      p25: percentile(sorted, 0.25),
+      p75: percentile(sorted, 0.75),
       p90: percentile(sorted, 0.9),
       min: sorted[0],
       max: sorted[sorted.length - 1],
+      highs: sorted,
     })
   }
   return out.sort((a, b) => a.date.localeCompare(b.date))
@@ -192,6 +198,75 @@ export function ensembleMembers(res: EnsembleResponse): EnsembleMembers {
     }),
   )
   return { dates, members }
+}
+
+// --- Bimodalität: teilt sich das Ensemble in ZWEI Temperatur-Lager? -----------
+// Zeigt die Marginalverteilung EINES Tages (nicht verfolgte Member-Bahnen): an
+// einem Tag können die Läufe in zwei Gruppen zerfallen (z. B. Front Samstag vs.
+// Sonntag). Ein glattes Band verwischt das — der Punktstreu macht es sichtbar,
+// dieser Detektor steuert nur den Text-Hinweis. Bewusst konservativ (lieber ein
+// echtes Signal verpassen als ein falsches behaupten): teilt an der größten
+// Lücke und verlangt ALLE drei Bedingungen.
+export interface BimodalResult {
+  isBimodal: boolean
+  lowMean: number // Mittel des kühleren Lagers
+  highMean: number // Mittel des wärmeren Lagers
+  lowFrac: number // Anteil Member im kühleren Lager (0..1)
+  gap: number // Temperaturlücke zwischen den Lagern (°C)
+}
+
+const NOT_BIMODAL: BimodalResult = { isBimodal: false, lowMean: NaN, highMean: NaN, lowFrac: 0, gap: 0 }
+
+function stdev(xs: number[], mean: number): number {
+  if (xs.length < 2) return 0
+  return Math.sqrt(xs.reduce((s, v) => s + (v - mean) ** 2, 0) / xs.length)
+}
+
+/**
+ * @param sortedHighs aufsteigend sortierte Member-Höchstwerte eines Tages
+ * @param minGap absolute Mindestlücke zwischen den Lagern (°C) — meteorologische Relevanz
+ * @param minSep normierte Trennung (μ_hoch−μ_tief)/(σ_tief+σ_hoch) — Lager wirklich aufgelöst
+ * @param minFrac Mindestanteil je Lager — zwei Gruppen, kein Ausreißer
+ */
+export function bimodalSplit(
+  sortedHighs: number[],
+  minGap = 2.5,
+  minSep = 2,
+  minFrac = 0.3,
+): BimodalResult {
+  const n = sortedHighs.length
+  if (n < 8) return NOT_BIMODAL // zu wenige Member für eine belastbare Aussage
+
+  // größte Lücke zwischen benachbarten (sortierten) Werten → Trennstelle
+  let splitAt = -1
+  let biggest = -Infinity
+  for (let i = 1; i < n; i++) {
+    const g = sortedHighs[i] - sortedHighs[i - 1]
+    if (g > biggest) {
+      biggest = g
+      splitAt = i
+    }
+  }
+  const low = sortedHighs.slice(0, splitAt)
+  const high = sortedHighs.slice(splitAt)
+
+  // (2) Balance: jedes Lager mindestens minFrac der Member
+  const lowFrac = low.length / n
+  if (lowFrac < minFrac || 1 - lowFrac < minFrac) return NOT_BIMODAL
+
+  const lowMean = low.reduce((s, v) => s + v, 0) / low.length
+  const highMean = high.reduce((s, v) => s + v, 0) / high.length
+  const gap = highMean - lowMean
+
+  // (3) absolute Mindestlücke zwischen den Lager-Mitteln
+  if (gap < minGap) return NOT_BIMODAL
+
+  // (1) normierte Trennung: Lager-Abstand groß gegen die Streuung IN den Lagern
+  const spread = stdev(low, lowMean) + stdev(high, highMean)
+  const sep = spread > 0 ? gap / spread : Infinity
+  if (sep < minSep) return NOT_BIMODAL
+
+  return { isBimodal: true, lowMean, highMean, lowFrac, gap }
 }
 
 // Tages-Höchst- ODER -Tiefstwert je Kalendertag aus einer Stundenreihe
