@@ -244,6 +244,16 @@ export default {
   fog: { none: 'keins', low: 'gering', moderate: 'mäßig', high: 'hoch' },
   fire: { low: 'gering', moderate: 'erhöht', high: 'hoch' },
   ride: { poor: 'schlecht', ok: 'okay', good: 'ideal' },
+  house: {
+    title: 'Haus-Prognose',
+    sub: 'Modelle gewichtet nach Treffsicherheit hier',
+    leans: 'Unsere Mischung setzt hier auf {model} ({pct} %)',
+    biasWarm: '{model} lag zuletzt {v}° zu warm',
+    biasCool: '{model} lag zuletzt {v}° zu kühl',
+    learning: 'Lernt diesen Ort — bisher {n} Tage gesammelt',
+    blendLabel: 'Gemischte Aussicht (Höchstwerte)',
+    footnote: 'Gewichtung aus {n} verifizierten Tagen · {lead}-Tage-Vorlauf, bias-korrigiert, ohne Blick in die Zukunft.',
+  },
   star: {
     title: 'Sternenhimmel',
     sub: 'Bestes dunkles Fenster heute Nacht',

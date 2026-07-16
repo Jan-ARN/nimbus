@@ -4,6 +4,7 @@ import { useQuery, keepPreviousData } from '@tanstack/vue-query'
 import { storeToRefs } from 'pinia'
 import { Droplet, ChevronDown } from 'lucide-vue-next'
 import ConditionsHero from '@/components/ConditionsHero.vue'
+import HouseForecastCard from '@/components/HouseForecastCard.vue'
 import Spinner from '@/components/ui/Spinner.vue'
 import MultiLineChart from '@/components/MultiLineChart.vue'
 import type { LineSeries } from '@/lib/chartTypes'
@@ -116,6 +117,9 @@ function disagreeColor(d: number) {
 <template>
   <div class="flex flex-col gap-6">
     <ConditionsHero />
+
+    <!-- Haus-Prognose: History → Models geschlossen -->
+    <HouseForecastCard />
 
     <!-- Modelle -->
     <section class="glass reveal p-5">

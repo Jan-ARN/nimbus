@@ -283,6 +283,29 @@ export const EVOLUTION_LEADS = [1, 2, 3, 4, 5, 6, 7] as const
  * Empirisch bestätigt: bei festem Zeitstempel sind die Spalten offset-ausgerichtet
  * (Lauf N Tage älter), alle künftigen Tage sind lückenlos befüllt.
  */
+/**
+ * Frühere Läufe PRO MODELL bei fester Vorlaufzeit (`temperature_2m_previous_dayN`
+ * kommt mit models= als `..._<modelId>` zurück). Basis der „Haus-Prognose": wie
+ * gut jedes Modell zuletzt an DIESEM Ort getroffen hat (look-ahead-frei, weil der
+ * Lauf N Tage vor dem Zieltag ausgegeben wurde). Actual = ERA5-Archiv.
+ */
+export async function fetchModelRuns(
+  place: Place,
+  modelIds: string[],
+  lead: number,
+  pastDays = 28,
+): Promise<PreviousRunsResponse> {
+  return getJson<PreviousRunsResponse>('/api/previous', {
+    latitude: place.lat,
+    longitude: place.lon,
+    models: modelIds.join(','),
+    hourly: `temperature_2m_previous_day${lead}`,
+    past_days: pastDays,
+    forecast_days: 1,
+    timezone: 'auto',
+  })
+}
+
 export async function fetchRunEvolution(place: Place): Promise<PreviousRunsResponse> {
   const prev = EVOLUTION_LEADS.map((n) => `temperature_2m_previous_day${n}`).join(',')
   return getJson<PreviousRunsResponse>('/api/previous', {

@@ -244,6 +244,16 @@ export default {
   fog: { none: 'none', low: 'low', moderate: 'moderate', high: 'high' },
   fire: { low: 'low', moderate: 'elevated', high: 'high' },
   ride: { poor: 'poor', ok: 'okay', good: 'ideal' },
+  house: {
+    title: 'House forecast',
+    sub: 'Models weighted by how well they verify here',
+    leans: 'Our blend leans {model} here ({pct}%)',
+    biasWarm: '{model} has run {v}° too warm',
+    biasCool: '{model} has run {v}° too cool',
+    learning: 'Learning this location — {n} days banked so far',
+    blendLabel: 'Blended outlook (highs)',
+    footnote: 'Weights from {n} verified days · {lead}-day lead, bias-corrected, no look-ahead.',
+  },
   star: {
     title: 'Stargazing',
     sub: 'Best dark window tonight',
