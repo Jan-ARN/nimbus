@@ -1,5 +1,6 @@
 import { i18n, localeTag } from '@/i18n'
 import type { UtciCategory } from '@/lib/wx/categories'
+import type { ThunderLevel, FogLevel } from '@/lib/wx/indices'
 
 // t()/localeTag() lesen die aktive Sprache reaktiv → in computeds/Templates
 // verwendete Formatierer aktualisieren sich beim Sprachwechsel automatisch.
@@ -143,6 +144,36 @@ export function dryingLevel(score: number | null | undefined): { label: string; 
   if (score < 25) return { label: t('drying.poor'), color: '#ff7847' }
   if (score < 55) return { label: t('drying.ok'), color: '#ffb454' }
   return { label: t('drying.good'), color: '#3ddc97' }
+}
+
+// Gewitterpotenzial → Label + Farbe
+const THUNDER_COLORS: Record<ThunderLevel, string> = {
+  none: '#61728f',
+  moderate: '#ffb454',
+  strong: '#ff7847',
+  extreme: '#c792ea',
+}
+export function thunderLevel(level: ThunderLevel): { label: string; color: string } {
+  return { label: t(`thunder.${level}`), color: THUNDER_COLORS[level] }
+}
+
+// Nebelrisiko → Label + Farbe
+const FOG_COLORS: Record<FogLevel, string> = {
+  none: '#61728f',
+  low: '#8fd6d6',
+  moderate: '#ffb454',
+  high: '#ff7847',
+}
+export function fogLevel(level: FogLevel): { label: string; color: string } {
+  return { label: t(`fog.${level}`), color: FOG_COLORS[level] }
+}
+
+// Feuer-/Trockenstress (0..100) → Einschätzung
+export function fireLevel(score: number | null | undefined): { label: string; color: string } {
+  if (score == null) return { label: t('none'), color: '#61728f' }
+  if (score < 35) return { label: t('fire.low'), color: '#3ddc97' }
+  if (score < 65) return { label: t('fire.moderate'), color: '#ffb454' }
+  return { label: t('fire.high'), color: '#ff5d73' }
 }
 
 export function fmtTime(iso: string | null | undefined): string {

@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { snowLine, dryingIndex } from '../indices'
+import {
+  snowLine,
+  dryingIndex,
+  thunderPotential,
+  fogRisk,
+  fireStress,
+  growingDegreeDays,
+} from '../indices'
 
 describe('snow line', () => {
   it('places the snow line ~200 m below the freezing level', () => {
@@ -25,5 +32,45 @@ describe('drying index', () => {
   })
   it('decreases with rain probability', () => {
     expect(dryingIndex({ ...base, precipProbPct: 90 })).toBeLessThan(dryingIndex(base))
+  })
+})
+
+describe('thunder potential', () => {
+  it('maps CAPE to bands', () => {
+    expect(thunderPotential(null)).toBe('none')
+    expect(thunderPotential(120)).toBe('none')
+    expect(thunderPotential(600)).toBe('moderate')
+    expect(thunderPotential(1800)).toBe('strong')
+    expect(thunderPotential(3000)).toBe('extreme')
+  })
+})
+
+describe('fog risk', () => {
+  const still = { tempC: 8, dewpointC: 7.5, windKmh: 4, relativeHumidityPct: 96, visibilityM: 8000 }
+  it('flags high risk on tiny dew-point spread, calm and humid', () => {
+    expect(fogRisk(still)).toBe('high')
+  })
+  it('already-foggy visibility ⇒ high regardless', () => {
+    expect(fogRisk({ ...still, tempC: 8, dewpointC: 2, windKmh: 20, relativeHumidityPct: 60, visibilityM: 400 })).toBe('high')
+  })
+  it('dry, breezy air ⇒ none', () => {
+    expect(fogRisk({ tempC: 20, dewpointC: 6, windKmh: 25, relativeHumidityPct: 45, visibilityM: 30000 })).toBe('none')
+  })
+})
+
+describe('fire/drought stress', () => {
+  it('rises with VPD and drops with humidity', () => {
+    const hot = fireStress({ vpdKpa: 2.5, et0Mm: 0.5, windKmh: 25, relativeHumidityPct: 20 })
+    const mild = fireStress({ vpdKpa: 0.3, et0Mm: 0.05, windKmh: 5, relativeHumidityPct: 85 })
+    expect(hot).toBeGreaterThan(mild)
+    expect(hot).toBeGreaterThan(70)
+    expect(mild).toBeLessThan(25)
+  })
+})
+
+describe('growing degree days', () => {
+  it('sums (mean − base), flooring negatives at 0', () => {
+    // day1 mean 20 → 10; day2 mean 8 → 0; day3 mean 15 → 5  ⇒ 15
+    expect(growingDegreeDays([25, 12, 20], [15, 4, 10], 10)).toBe(15)
   })
 })

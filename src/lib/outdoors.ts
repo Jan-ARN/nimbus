@@ -11,9 +11,14 @@ import {
   findBestWindow,
   snowLine,
   dryingIndex,
+  thunderPotential,
+  fogRisk,
+  fireStress,
   solarElevationDeg,
   type UtciCategory,
   type GoldenWindow,
+  type ThunderLevel,
+  type FogLevel,
 } from '@/lib/wx'
 import { relativeSpreadBand, type EnsembleHourlySpread } from '@/lib/series'
 
@@ -44,6 +49,13 @@ export interface OutdoorsData {
   snowLineM: number | null
   freezingLevelM: number | null
   drying: number | null
+  hazards: {
+    thunder: ThunderLevel
+    thunderActive: boolean // aktiver Gewitter-WMO-Code (95–99)
+    capeNow: number | null
+    fog: FogLevel
+    fire: number
+  }
 }
 
 interface PlaceLL {
@@ -84,6 +96,7 @@ export function buildOutdoors(
     snowLineM: null,
     freezingLevelM: null,
     drying: null,
+    hazards: { thunder: 'none', thunderActive: false, capeNow: null, fog: 'none', fire: 0 },
   }
   const h = cond?.hourly
   const time = (h?.time as string[] | undefined) ?? []
@@ -104,6 +117,9 @@ export function buildOutdoors(
   const dni = col(h, 'direct_normal_irradiance')
   const et0 = col(h, 'et0_fao_evapotranspiration')
   const frost = col(h, 'freezing_level_height')
+  const cape = col(h, 'cape')
+  const vpd = col(h, 'vapour_pressure_deficit')
+  const wcode = col(h, 'weather_code')
 
   const now0 = nearestIndex(time, now)
   const end = Math.min(time.length, now0 + HORIZON_H)
@@ -191,6 +207,24 @@ export function buildOutdoors(
       windKmh: wind[now0],
       precipProbPct: precipProb[now0],
     }),
+    hazards: {
+      thunder: thunderPotential(cape[now0]),
+      thunderActive: wcode[now0] != null && (wcode[now0] as number) >= 95,
+      capeNow: cape[now0] ?? null,
+      fog: fogRisk({
+        tempC: temp[now0],
+        dewpointC: dew[now0],
+        windKmh: wind[now0],
+        relativeHumidityPct: rh[now0],
+        visibilityM: vis[now0],
+      }),
+      fire: fireStress({
+        vpdKpa: vpd[now0],
+        et0Mm: et0[now0],
+        windKmh: wind[now0],
+        relativeHumidityPct: rh[now0],
+      }),
+    },
   }
 }
 

@@ -3,13 +3,14 @@ import { computed } from 'vue'
 import { useQuery, keepPreviousData } from '@tanstack/vue-query'
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
-import { Sparkles, Mountain, Shirt, Info } from 'lucide-vue-next'
+import { Sparkles, Mountain, Shirt, Info, Zap, CloudFog, Flame } from 'lucide-vue-next'
+import type { Component } from 'vue'
 import Spinner from '@/components/ui/Spinner.vue'
 import { usePlacesStore } from '@/stores/places'
 import { fetchConditions, fetchEnsemble } from '@/api/weather'
 import { ensembleHourlySpread } from '@/lib/series'
 import { buildOutdoors } from '@/lib/outdoors'
-import { utciLevel, dryingLevel } from '@/lib/format'
+import { utciLevel, dryingLevel, thunderLevel, fogLevel, fireLevel } from '@/lib/format'
 import { localeTag } from '@/i18n'
 
 const { t } = useI18n()
@@ -100,6 +101,47 @@ const drying = computed(() => {
   const s = data.value.drying
   if (s == null) return null
   return { score: s, level: dryingLevel(s) }
+})
+
+// --- Draußen-Risiken (nur zeigen, wenn relevant) ------------------------------
+interface HazardTile {
+  key: string
+  icon: Component
+  title: string
+  label: string
+  color: string
+  sub?: string
+}
+const hazards = computed<HazardTile[]>(() => {
+  const hz = data.value.hazards
+  const tiles: HazardTile[] = []
+  if (hz.thunder !== 'none' || hz.thunderActive) {
+    const l = thunderLevel(hz.thunder === 'none' ? 'moderate' : hz.thunder)
+    tiles.push({
+      key: 'thunder',
+      icon: Zap,
+      title: t('outdoors.thunderTitle'),
+      label: l.label,
+      color: l.color,
+      sub: t('outdoors.thunderSub', { cape: Math.round(hz.capeNow ?? 0) }),
+    })
+  }
+  if (hz.fog !== 'none') {
+    const l = fogLevel(hz.fog)
+    tiles.push({ key: 'fog', icon: CloudFog, title: t('outdoors.fogTitle'), label: l.label, color: l.color })
+  }
+  if (hz.fire >= 35) {
+    const l = fireLevel(hz.fire)
+    tiles.push({
+      key: 'fire',
+      icon: Flame,
+      title: t('outdoors.fireTitle'),
+      label: l.label,
+      color: l.color,
+      sub: t('outdoors.fireSub'),
+    })
+  }
+  return tiles
 })
 </script>
 
@@ -195,6 +237,20 @@ const drying = computed(() => {
             <span class="text-sm font-medium capitalize" :style="{ color: drying.level.color }">{{ drying.level.label }}</span>
           </div>
           <div class="label mt-0.5 normal-case tracking-normal">{{ $t('outdoors.dryingSub') }}</div>
+        </div>
+      </section>
+
+      <!-- Risiko-Kacheln: nur bei Relevanz (Gewitter, Nebel, Trockenheit) -->
+      <section
+        v-for="hz in hazards"
+        :key="hz.key"
+        class="glass reveal flex items-start gap-3 p-5"
+      >
+        <component :is="hz.icon" :size="22" class="mt-0.5 shrink-0" :style="{ color: hz.color }" />
+        <div class="min-w-0">
+          <div class="label">{{ hz.title }}</div>
+          <div class="mt-1 text-sm font-medium capitalize" :style="{ color: hz.color }">{{ hz.label }}</div>
+          <div v-if="hz.sub" class="label mt-0.5 normal-case tracking-normal">{{ hz.sub }}</div>
         </div>
       </section>
     </div>
