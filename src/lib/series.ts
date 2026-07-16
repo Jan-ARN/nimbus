@@ -267,6 +267,63 @@ export function ensembleMembers(res: EnsembleResponse): EnsembleMembers {
   return { dates, members }
 }
 
+// --- Ensemble → stündliches Streuband ----------------------------------------
+// aggregateEnsemble/ensembleMembers verdichten auf TAGES-Höchstwerte. Für
+// stündliche/aktuelle Größen (UTCI-Band, Golden-Score) brauchen wir die Streuung
+// JE STUNDE. Da die Temperatur-Mitte aus best_match kommt und das Ensemble nur
+// GFS ist, nutzen wir die Streuung RELATIV (Abstand zum Member-Median), nicht die
+// GFS-Absolutwerte — siehe relativeSpreadBand.
+export interface EnsembleHourlySpread {
+  time: string[]
+  p25: number[]
+  p50: number[]
+  p75: number[]
+}
+
+export function ensembleHourlySpread(res: EnsembleResponse): EnsembleHourlySpread {
+  const h = res.hourly ?? {}
+  const time = asStr(h.time)
+  if (time.length === 0) return { time: [], p25: [], p50: [], p75: [] }
+
+  const memberKeys = Object.keys(h).filter((k) => /^temperature_2m(_member\d+)?$/.test(k))
+  const members = memberKeys.map((k) => asNums(h[k]))
+
+  const p25: number[] = []
+  const p50: number[] = []
+  const p75: number[] = []
+  for (let i = 0; i < time.length; i++) {
+    const vals: number[] = []
+    for (const m of members) {
+      const v = m[i]
+      if (v != null && !Number.isNaN(v)) vals.push(v)
+    }
+    vals.sort((a, b) => a - b)
+    p25.push(percentile(vals, 0.25))
+    p50.push(percentile(vals, 0.5))
+    p75.push(percentile(vals, 0.75))
+  }
+  return { time, p25, p50, p75 }
+}
+
+/**
+ * Relatives Unsicherheitsband (°C) um einen deterministischen Wert am
+ * Stundenindex i: det + (p25−median) … det + (p75−median). So wird die (GFS-)
+ * Ensemble-STREUUNG auf den best_match-Wert übertragen, ohne dessen absolute
+ * Lage zu ersetzen. null, wenn an der Stelle keine Member vorliegen.
+ */
+export function relativeSpreadBand(
+  spread: EnsembleHourlySpread,
+  i: number,
+  deterministic: number,
+): { lo: number; hi: number } | null {
+  const med = spread.p50[i]
+  if (med == null || Number.isNaN(med)) return null
+  return {
+    lo: deterministic + (spread.p25[i] - med),
+    hi: deterministic + (spread.p75[i] - med),
+  }
+}
+
 // --- Bimodalität: teilt sich das Ensemble in ZWEI Temperatur-Lager? -----------
 // Zeigt die Marginalverteilung EINES Tages (nicht verfolgte Member-Bahnen): an
 // einem Tag können die Läufe in zwei Gruppen zerfallen (z. B. Front Samstag vs.

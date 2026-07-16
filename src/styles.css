@@ -133,6 +133,20 @@
     --sky-glow: rgba(143, 230, 255, 0.4);
   }
 
+  /* ❄ Bittere Kälte (UTCI ≤ −13): eisig-blaues Theme, vom Wetter-Code unabhängig */
+  [data-sky='cold'] {
+    --background: #060a12;
+    --foreground: #eaf2ff;
+    --primary: #7fb4ff;
+    --primary-foreground: #05070f;
+    --muted-foreground: #93aacb;
+    --border: rgba(150, 185, 230, 0.18);
+    --sky-1: #26374f;
+    --sky-2: #14202f;
+    --sky-3: #060a12;
+    --sky-glow: rgba(150, 200, 255, 0.32);
+  }
+
   * {
     border-color: var(--border);
   }

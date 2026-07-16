@@ -38,6 +38,12 @@ export const router = createRouter({
       component: () => import('./views/RecordsView.vue'),
       meta: { title: 'Rekorde', icon: 'mdi-trophy' },
     },
+    {
+      path: '/outdoors',
+      name: 'outdoors',
+      component: () => import('./views/OutdoorsView.vue'),
+      meta: { title: 'Draußen', icon: 'mdi-hiking' },
+    },
     // Alte deutsche Pfade weiterleiten
     { path: '/karte', redirect: '/models' },
     { path: '/map', redirect: '/models' },

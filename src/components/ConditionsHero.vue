@@ -8,7 +8,8 @@ import Spinner from '@/components/ui/Spinner.vue'
 import { usePlacesStore } from '@/stores/places'
 import { useSkyStore } from '@/stores/sky'
 import { fetchConditions, fetchAirQuality, POLLEN_KEYS } from '@/api/weather'
-import { wmo, fmtTemp, windDir, uvLevel, aqiLevel, pollenLevel, fmtTime, pollenName } from '@/lib/format'
+import { wmo, fmtTemp, windDir, uvLevel, aqiLevel, pollenLevel, fmtTime, pollenName, utciLevel } from '@/lib/format'
+import { buildOutdoors } from '@/lib/outdoors'
 import { wmoIcon } from '@/lib/weatherIcon'
 
 const { t } = useI18n()
@@ -31,6 +32,11 @@ const air = useQuery({
 const c = computed(() => cond.data.value?.current as Record<string, number> | undefined)
 const loading = computed(() => !c.value)
 const daily = computed(() => cond.data.value?.daily as Record<string, (string | number)[]> | undefined)
+
+// UTCI-„gefühlt": Wind + Feuchte + Strahlung, ehrlicher als apparent_temperature.
+const feelsNow = computed(
+  () => buildOutdoors(cond.data.value, { lat: active.value.lat, lon: active.value.lon }, new Date()).current,
+)
 
 const skyText = computed(() => wmo(c.value?.weather_code as number | undefined).label)
 const skyIcon = computed(() => wmoIcon(c.value?.weather_code as number | undefined, sky.isDay))
@@ -56,8 +62,13 @@ const stats = computed<Stat[]>(() => {
   const uv = uvLevel(c.value.uv_index)
   const pol = topPollen.value ? pollenLevel(topPollen.value.v) : null
   const sun = daily.value
+  const uc = feelsNow.value
+  const feels =
+    uc?.utci != null
+      ? { label: t('hero.feels'), value: `${Math.round(uc.utci)}°`, sub: utciLevel(uc.category).label, color: utciLevel(uc.category).color }
+      : { label: t('hero.feels'), value: fmtTemp(c.value.apparent_temperature, 0) }
   return [
-    { label: t('hero.feels'), value: fmtTemp(c.value.apparent_temperature, 0) },
+    feels,
     { label: t('hero.humidity'), value: `${Math.round(c.value.relative_humidity_2m)} %` },
     { label: t('hero.dewPoint'), value: fmtTemp(c.value.dew_point_2m, 0) },
     { label: t('hero.wind'), value: `${Math.round(c.value.wind_speed_10m)}`, sub: `km/h · ${t('hero.gusts')} ${Math.round(c.value.wind_gusts_10m)} · ${windDir(c.value.wind_direction_10m)}` },
@@ -106,7 +117,7 @@ const stats = computed<Stat[]>(() => {
           <div class="pb-3">
             <component :is="skyIcon" :size="34" class="text-primary" :stroke-width="1.5" />
             <div class="mt-1 text-[16px] font-semibold leading-tight">{{ skyText }}</div>
-            <div class="text-[13px] text-muted-foreground">{{ $t('hero.feltShort') }} {{ fmtTemp(c?.apparent_temperature, 0) }}</div>
+            <div class="text-[13px] text-muted-foreground">{{ $t('hero.feltShort') }} {{ feelsNow?.utci != null ? Math.round(feelsNow.utci) + '°' : fmtTemp(c?.apparent_temperature, 0) }}</div>
           </div>
         </div>
 

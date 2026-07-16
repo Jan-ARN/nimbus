@@ -3,7 +3,7 @@ import { computed, watch, watchEffect } from 'vue'
 import { useQuery, keepPreviousData } from '@tanstack/vue-query'
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
-import { ChartSpline, CalendarClock, Wind, History, Trophy, Languages } from 'lucide-vue-next'
+import { ChartSpline, CalendarClock, Wind, History, Trophy, Footprints, Languages } from 'lucide-vue-next'
 import { setLocale, type Locale } from '@/i18n'
 import NimbusMark from '@/components/NimbusMark.vue'
 import SkyCanvas from '@/components/SkyCanvas.vue'
@@ -13,6 +13,7 @@ import { usePlacesStore } from '@/stores/places'
 import { useSkyStore } from '@/stores/sky'
 import { fetchConditions } from '@/api/weather'
 import { maybeSnapshotToday } from '@/lib/snapshots'
+import { currentConditionUtci } from '@/lib/outdoors'
 
 // Globaler Himmel: das ganze App-Theme folgt der aktuellen Lage des aktiven Orts,
 // auf jeder Seite (nicht nur wo die Conditions-Hero steht). Gleicher Query-Key
@@ -26,8 +27,14 @@ const cond = useQuery({
   placeholderData: keepPreviousData,
 })
 watch(
-  () => cond.data.value?.current,
-  (cur) => sky.setFromCurrent(cur as Record<string, number | string> | undefined),
+  () => cond.data.value,
+  (data) => {
+    const cur = data?.current as Record<string, number | string> | undefined
+    // UTCI aus der Jetzt-Stunde (Strahlung liegt nur stündlich vor) treibt die
+    // Hitze-/Kälte-Stimmung des Themes ehrlicher als die reine Lufttemperatur.
+    const u = currentConditionUtci(data, active.value, new Date())
+    sky.setFromCurrent(cur, u)
+  },
   { immediate: true },
 )
 // Prognose-Samen: 1× pro Ort und Tag alle Modelle mitschreiben (Bestenliste/
@@ -44,6 +51,7 @@ const tabs = [
   { to: '/air', labelKey: 'nav.air', icon: Wind },
   { to: '/history', labelKey: 'nav.history', icon: History },
   { to: '/records', labelKey: 'nav.records', icon: Trophy },
+  { to: '/outdoors', labelKey: 'nav.outdoors', icon: Footprints },
 ]
 const LOCALES: Locale[] = ['de', 'en']
 </script>
@@ -155,7 +163,10 @@ const LOCALES: Locale[] = ['de', 'en']
 .fade-leave-to {
   opacity: 0;
 }
-@media (max-width: 640px) {
+/* Nav-Labels erst ab Breitbild zeigen (6 Tabs + Sprachwahl + Marke passen sonst
+   auf Tablet-Breiten nicht nebeneinander). Darunter (bis 640 px greift die untere
+   Leiste) bleibt die Kopf-Pille kompakt: nur Icons. */
+@media (max-width: 1023px) {
   .nav-label {
     display: none;
   }

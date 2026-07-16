@@ -1,4 +1,5 @@
 import { i18n, localeTag } from '@/i18n'
+import type { UtciCategory } from '@/lib/wx/categories'
 
 // t()/localeTag() lesen die aktive Sprache reaktiv → in computeds/Templates
 // verwendete Formatierer aktualisieren sich beim Sprachwechsel automatisch.
@@ -116,6 +117,32 @@ export function pollenLevel(v: number | null | undefined): { label: string; colo
 // Pollenart-Schlüssel → lokalisierter Name
 export function pollenName(key: string): string {
   return t(`pollenName.${key}`)
+}
+
+// UTCI-Stresskategorie → Label + Farbe (kalt = blau, angenehm = grün, heiß = rot)
+const UTCI_COLORS: Record<UtciCategory, string> = {
+  extremeCold: '#6a8cff',
+  veryStrongCold: '#4aa8ff',
+  strongCold: '#46b6ff',
+  moderateCold: '#6cc4e0',
+  slightCold: '#8fd6d6',
+  noStress: '#3ddc97',
+  moderateHeat: '#ffb454',
+  strongHeat: '#ff8a3d',
+  veryStrongHeat: '#ff5d73',
+  extremeHeat: '#c792ea',
+}
+export function utciLevel(cat: UtciCategory | null | undefined): { label: string; color: string } {
+  if (!cat) return { label: t('none'), color: '#61728f' }
+  return { label: t(`utci.${cat}`), color: UTCI_COLORS[cat] }
+}
+
+// Wäsche-/Trocknungsindex (0..100) → Einschätzung
+export function dryingLevel(score: number | null | undefined): { label: string; color: string } {
+  if (score == null) return { label: t('none'), color: '#61728f' }
+  if (score < 25) return { label: t('drying.poor'), color: '#ff7847' }
+  if (score < 55) return { label: t('drying.ok'), color: '#ffb454' }
+  return { label: t('drying.good'), color: '#3ddc97' }
 }
 
 export function fmtTime(iso: string | null | undefined): string {
