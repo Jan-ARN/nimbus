@@ -136,7 +136,7 @@ export async function fetchConditions(place: Place, days = 14): Promise<Conditio
     // Schneegrenze, Wäscheindex). Piggyback auf denselben best_match-Request →
     // kein Extra-Aufruf, nur etwas mehr Variablen.
     hourly:
-      'temperature_2m,apparent_temperature,precipitation_probability,precipitation,uv_index,relative_humidity_2m,dew_point_2m,wind_speed_10m,wind_gusts_10m,weather_code,cloud_cover,visibility,sunshine_duration,freezing_level_height,et0_fao_evapotranspiration,vapour_pressure_deficit,cape,shortwave_radiation,direct_radiation,diffuse_radiation,direct_normal_irradiance',
+      'temperature_2m,apparent_temperature,precipitation_probability,precipitation,uv_index,relative_humidity_2m,dew_point_2m,wind_speed_10m,wind_gusts_10m,weather_code,cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,visibility,sunshine_duration,freezing_level_height,et0_fao_evapotranspiration,vapour_pressure_deficit,cape,shortwave_radiation,direct_radiation,diffuse_radiation,direct_normal_irradiance',
     daily:
       'weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,precipitation_sum,precipitation_probability_max,wind_speed_10m_max,wind_gusts_10m_max,uv_index_max,sunrise,sunset,sunshine_duration,daylight_duration',
     forecast_days: days,

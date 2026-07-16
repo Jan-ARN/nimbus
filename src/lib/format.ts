@@ -176,6 +176,14 @@ export function fireLevel(score: number | null | undefined): { label: string; co
   return { label: t('fire.high'), color: '#ff5d73' }
 }
 
+// Rad-/Lauf-Komfort (0..100) → Einschätzung
+export function rideLevel(score: number | null | undefined): { label: string; color: string } {
+  if (score == null) return { label: t('none'), color: '#61728f' }
+  if (score < 40) return { label: t('ride.poor'), color: '#ff7847' }
+  if (score < 70) return { label: t('ride.ok'), color: '#ffb454' }
+  return { label: t('ride.good'), color: '#3ddc97' }
+}
+
 export function fmtTime(iso: string | null | undefined): string {
   if (!iso) return '–'
   return new Date(iso).toLocaleTimeString(localeTag(), { hour: '2-digit', minute: '2-digit' })

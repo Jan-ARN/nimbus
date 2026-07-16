@@ -81,6 +81,39 @@ export function growingDegreeDays(
   return Math.round(sum)
 }
 
+// --- Rad-/Lauf-Komfort -------------------------------------------------------
+// Bewegung erzeugt Wärme → das angenehme Band liegt KÜHLER als beim Ruhen
+// (≈ 6–18 °C UTCI). Kombiniert mit Regen, Wind/Böen, Luftqualität und Pollen
+// (Atmung). Multiplikatives Gating wie beim Golden-Window.
+export interface RideRunInputs {
+  utci: number | null
+  precipitationMm: number | null
+  windKmh: number | null
+  gustKmh: number | null
+  aqi: number | null
+  pollen: number | null
+}
+export function rideRunComfort(inp: RideRunInputs): number {
+  if (inp.utci == null) return 0
+  const lo = 6
+  const hi = 18
+  const margin = 10
+  let thermal: number
+  if (inp.utci >= lo && inp.utci <= hi) thermal = 1
+  else {
+    const d = inp.utci < lo ? lo - inp.utci : inp.utci - hi
+    thermal = d >= margin ? 0 : 0.5 * (1 + Math.cos((Math.PI * d) / margin))
+  }
+  const dry = inp.precipitationMm != null && inp.precipitationMm > 0.1 ? 0.15 : 1
+  const wind = 1 - clamp01(((inp.gustKmh ?? inp.windKmh ?? 0) - 20) / 40)
+  const air = inp.aqi == null ? 1 : 1 - clamp01((inp.aqi - 40) / 80)
+  const pollen = inp.pollen == null ? 1 : 1 - 0.6 * clamp01((inp.pollen - 20) / 100)
+  const f = [thermal, dry, wind, air, pollen]
+  let prod = 1
+  for (const v of f) prod *= v
+  return Math.round(Math.pow(prod, 1 / f.length) * 100)
+}
+
 export interface DryingInputs {
   /** Referenz-Verdunstung ET₀ (mm) der Stunde */
   et0Mm: number | null

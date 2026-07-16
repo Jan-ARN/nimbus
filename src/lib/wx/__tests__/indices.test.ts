@@ -6,6 +6,7 @@ import {
   fogRisk,
   fireStress,
   growingDegreeDays,
+  rideRunComfort,
 } from '../indices'
 
 describe('snow line', () => {
@@ -72,5 +73,23 @@ describe('growing degree days', () => {
   it('sums (mean − base), flooring negatives at 0', () => {
     // day1 mean 20 → 10; day2 mean 8 → 0; day3 mean 15 → 5  ⇒ 15
     expect(growingDegreeDays([25, 12, 20], [15, 4, 10], 10)).toBe(15)
+  })
+})
+
+describe('ride/run comfort', () => {
+  const good = { utci: 12, precipitationMm: 0, windKmh: 8, gustKmh: 14, aqi: 25, pollen: 5 }
+  it('scores a cool, clean, calm hour high', () => {
+    expect(rideRunComfort(good)).toBeGreaterThan(85)
+  })
+  it('rain lowers it meaningfully (but exertion isn’t fully gated like leisure)', () => {
+    const wet = rideRunComfort({ ...good, precipitationMm: 3 })
+    expect(wet).toBeLessThan(rideRunComfort(good) - 15)
+    expect(wet).toBeLessThan(75)
+  })
+  it('bad air and high pollen lower it', () => {
+    expect(rideRunComfort({ ...good, aqi: 110, pollen: 120 })).toBeLessThan(rideRunComfort(good))
+  })
+  it('null UTCI ⇒ 0', () => {
+    expect(rideRunComfort({ ...good, utci: null })).toBe(0)
   })
 })

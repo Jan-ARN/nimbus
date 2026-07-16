@@ -3,14 +3,17 @@ import { computed } from 'vue'
 import { useQuery, keepPreviousData } from '@tanstack/vue-query'
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
-import { Sparkles, Mountain, Shirt, Info, Zap, CloudFog, Flame } from 'lucide-vue-next'
+import { Sparkles, Mountain, Shirt, Info, Zap, CloudFog, Flame, Bike } from 'lucide-vue-next'
 import type { Component } from 'vue'
 import Spinner from '@/components/ui/Spinner.vue'
+import BarometricCard from '@/components/BarometricCard.vue'
+import StargazingCard from '@/components/StargazingCard.vue'
 import { usePlacesStore } from '@/stores/places'
-import { fetchConditions, fetchEnsemble } from '@/api/weather'
+import { fetchConditions, fetchEnsemble, fetchAirQuality, POLLEN_KEYS } from '@/api/weather'
 import { ensembleHourlySpread } from '@/lib/series'
 import { buildOutdoors } from '@/lib/outdoors'
-import { utciLevel, dryingLevel, thunderLevel, fogLevel, fireLevel } from '@/lib/format'
+import { rideRunComfort } from '@/lib/wx'
+import { utciLevel, dryingLevel, thunderLevel, fogLevel, fireLevel, rideLevel } from '@/lib/format'
 import { localeTag } from '@/i18n'
 
 const { t } = useI18n()
@@ -26,6 +29,11 @@ const cond = useQuery({
 const ens = useQuery({
   queryKey: computed(() => ['ensemble', active.value.id]),
   queryFn: () => fetchEnsemble(active.value, 35),
+  placeholderData: keepPreviousData,
+})
+const air = useQuery({
+  queryKey: computed(() => ['air', active.value.id]),
+  queryFn: () => fetchAirQuality(active.value),
   placeholderData: keepPreviousData,
 })
 
@@ -101,6 +109,30 @@ const drying = computed(() => {
   const s = data.value.drying
   if (s == null) return null
   return { score: s, level: dryingLevel(s) }
+})
+
+// --- Rad-/Lauf-Komfort --------------------------------------------------------
+const rideRun = computed(() => {
+  const u = data.value.current?.utci
+  const cur = cond.data.value?.current as Record<string, number> | undefined
+  if (u == null || !cur) return null
+  const airCur = air.data.value?.current as Record<string, number> | undefined
+  let pollen: number | null = null
+  if (airCur) {
+    for (const k of POLLEN_KEYS) {
+      const v = airCur[k]
+      if (v != null && (pollen == null || v > pollen)) pollen = v
+    }
+  }
+  const score = rideRunComfort({
+    utci: u,
+    precipitationMm: cur.precipitation ?? null,
+    windKmh: cur.wind_speed_10m ?? null,
+    gustKmh: cur.wind_gusts_10m ?? null,
+    aqi: airCur?.european_aqi ?? null,
+    pollen,
+  })
+  return { score, level: rideLevel(score) }
 })
 
 // --- Draußen-Risiken (nur zeigen, wenn relevant) ------------------------------
@@ -219,6 +251,12 @@ const hazards = computed<HazardTile[]>(() => {
       </template>
     </section>
 
+    <!-- Luftdruck & Wohlbefinden -->
+    <BarometricCard />
+
+    <!-- Sternenhimmel heute Nacht -->
+    <StargazingCard />
+
     <!-- Entscheidungs-Kacheln -->
     <div class="grid gap-4 sm:grid-cols-2">
       <section v-if="snow" class="glass reveal flex items-start gap-3 p-5">
@@ -237,6 +275,18 @@ const hazards = computed<HazardTile[]>(() => {
             <span class="text-sm font-medium capitalize" :style="{ color: drying.level.color }">{{ drying.level.label }}</span>
           </div>
           <div class="label mt-0.5 normal-case tracking-normal">{{ $t('outdoors.dryingSub') }}</div>
+        </div>
+      </section>
+
+      <section v-if="rideRun" class="glass reveal flex items-start gap-3 p-5">
+        <Bike :size="22" class="mt-0.5 shrink-0" :style="{ color: rideRun.level.color }" />
+        <div class="min-w-0">
+          <div class="label">{{ $t('outdoors.rideTitle') }}</div>
+          <div class="mt-1 flex items-baseline gap-2">
+            <span class="readout text-2xl" :style="{ color: rideRun.level.color }">{{ rideRun.score }}</span>
+            <span class="text-sm font-medium capitalize" :style="{ color: rideRun.level.color }">{{ rideRun.level.label }}</span>
+          </div>
+          <div class="label mt-0.5 normal-case tracking-normal">{{ $t('outdoors.rideSub') }}</div>
         </div>
       </section>
 
