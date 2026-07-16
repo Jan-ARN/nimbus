@@ -109,6 +109,16 @@ function percentile(sorted: number[], p: number): number {
   return sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo)
 }
 
+// k gleich-wahrscheinliche Quantile aus sortierten Werten — die Grundlage des
+// Quantil-Punktdiagramms (jeder Punkt steht für 1/k der Läufe; man kann sie
+// buchstäblich abzählen). Quantil (i+0,5)/k, i = 0…k−1.
+export function quantiles(sorted: number[], k: number): number[] {
+  if (sorted.length === 0 || k < 1) return []
+  const out: number[] = []
+  for (let i = 0; i < k; i++) out.push(percentile(sorted, (i + 0.5) / k))
+  return out
+}
+
 export function aggregateEnsemble(res: EnsembleResponse): EnsembleDay[] {
   const h = res.hourly ?? {}
   const time = asStr(h.time)
@@ -155,6 +165,63 @@ export function aggregateEnsemble(res: EnsembleResponse): EnsembleDay[] {
       min: sorted[0],
       max: sorted[sorted.length - 1],
       highs: sorted,
+    })
+  }
+  return out.sort((a, b) => a.date.localeCompare(b.date))
+}
+
+// --- Ensemble → Regenwahrscheinlichkeit je Tag (aus den Membern) -------------
+// PoP = Anteil der Member mit messbarem Regen (Tages-Summe ≥ 0,1 mm) — die
+// klassische Definition, hier ehrlich als „X von N Läufen" auslesbar.
+export interface EnsemblePrecipDay {
+  date: string
+  pop: number // 0..1 — Anteil Member mit ≥ threshold
+  wet: number // Anzahl „nasser" Member
+  total: number // Anzahl Member insgesamt
+  medianMm: number // Median der Tagessumme NUR über die nassen Member (mm) — „wenn es regnet"
+}
+
+export function ensemblePrecip(res: EnsembleResponse, thresholdMm = 0.1): EnsemblePrecipDay[] {
+  const h = res.hourly ?? {}
+  const time = asStr(h.time)
+  if (time.length === 0) return []
+
+  const memberKeys = Object.keys(h).filter((k) => /^precipitation(_member\d+)?$/.test(k))
+  const members = memberKeys.map((k) => asNums(h[k]))
+  if (members.length === 0) return []
+
+  const dayIdx = new Map<string, number[]>()
+  for (let i = 0; i < time.length; i++) {
+    const day = time[i].slice(0, 10)
+    const bucket = dayIdx.get(day)
+    if (bucket) bucket.push(i)
+    else dayIdx.set(day, [i])
+  }
+
+  const out: EnsemblePrecipDay[] = []
+  for (const [date, idxs] of dayIdx) {
+    const sums: number[] = []
+    for (const m of members) {
+      let s = 0
+      let any = false
+      for (const i of idxs) {
+        const v = m[i]
+        if (v != null && !Number.isNaN(v)) {
+          s += v
+          any = true
+        }
+      }
+      if (any) sums.push(s)
+    }
+    if (sums.length === 0) continue
+    const wetSums = sums.filter((s) => s >= thresholdMm).sort((a, b) => a - b)
+    out.push({
+      date,
+      pop: wetSums.length / sums.length,
+      wet: wetSums.length,
+      total: sums.length,
+      // bedingter Median: nur die nassen Läufe → passt zur Aussage „wenn es regnet".
+      medianMm: wetSums.length ? percentile(wetSums, 0.5) : 0,
     })
   }
   return out.sort((a, b) => a.date.localeCompare(b.date))

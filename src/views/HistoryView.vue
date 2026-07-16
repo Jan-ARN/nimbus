@@ -5,11 +5,13 @@ import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
 import { Target, ArrowUp, ArrowDown, Equal, Info } from 'lucide-vue-next'
 import MultiLineChart from '@/components/MultiLineChart.vue'
+import RunEvolutionChart from '@/components/RunEvolutionChart.vue'
 import Spinner from '@/components/ui/Spinner.vue'
 import type { LineSeries } from '@/lib/chartTypes'
 import { usePlacesStore } from '@/stores/places'
-import { fetchArchive, fetchForecastRuns, LEAD_DAYS } from '@/api/weather'
+import { fetchArchive, fetchForecastRuns, fetchRunEvolution, LEAD_DAYS } from '@/api/weather'
 import { dailyExtremeByDate, type NumArr } from '@/lib/series'
+import { runTrajectories } from '@/lib/evolution'
 import {
   metrics as calcMetrics,
   mse as calcMse,
@@ -50,6 +52,30 @@ const runs = useQuery({
   queryKey: computed(() => ['runs', active.value.id, windowDays.value]),
   queryFn: () => fetchForecastRuns(active.value, windowDays.value),
   placeholderData: keepPreviousData,
+})
+
+// Vorwärts-Blick: „ändern wir gerade unsere Meinung?" — wie sich die Prognose je
+// künftigem Zieltag Lauf für Lauf bewegt (Konvergenz vs. Flip-Flop).
+const evo = useQuery({
+  queryKey: computed(() => ['evolution', active.value.id]),
+  queryFn: () => fetchRunEvolution(active.value),
+  placeholderData: keepPreviousData,
+})
+const trajectories = computed(() => (evo.data.value ? runTrajectories(evo.data.value) : []))
+const evoSummary = computed(() => {
+  const ts = trajectories.value.filter((t) => t.ff != null)
+  if (!ts.length) return null
+  const flipping = ts.filter((t) => t.ff!.stability === 'flip-flopping').length
+  // stärkste Revision seit gestern (Betrag)
+  let biggest: { day: string; delta: number } | null = null
+  for (const t of ts) {
+    if (t.runs.length < 2) continue
+    const delta = t.runs[t.runs.length - 1] - t.runs[t.runs.length - 2]
+    if (!biggest || Math.abs(delta) > Math.abs(biggest.delta)) {
+      biggest = { day: new Date(t.date).toLocaleDateString(localeTag(), { weekday: 'long' }), delta }
+    }
+  }
+  return { n: ts.length, flipping, biggest }
 })
 
 // Beobachtete Höchst-/Tiefstwerte je Tag.
@@ -176,9 +202,10 @@ const loading = computed(() => !rows.value.length)
 <template>
   <div class="flex flex-col gap-6">
     <!-- Treffsicherheits-Headline -->
-    <section class="glass grid-texture reveal flex items-center gap-6 p-6">
-      <div class="grid h-[76px] w-[76px] shrink-0 place-items-center rounded-2xl border border-primary" style="background: color-mix(in srgb, var(--primary) 14%, transparent)">
-        <Target :size="36" class="text-primary" />
+    <section class="glass grid-texture reveal flex items-center gap-4 p-6 sm:gap-6">
+      <div class="grid h-14 w-14 shrink-0 place-items-center rounded-2xl border border-primary sm:h-[76px] sm:w-[76px]" style="background: color-mix(in srgb, var(--primary) 14%, transparent)">
+        <Target :size="32" class="text-primary sm:hidden" />
+        <Target :size="36" class="hidden text-primary sm:block" />
       </div>
       <div class="min-w-0">
         <div class="label">{{ active.name }} · {{ $t('history.accuracyTitle') }}</div>
@@ -192,6 +219,33 @@ const loading = computed(() => !rows.value.length)
         </template>
         <Spinner v-else :size="22" class="mt-2" />
       </div>
+    </section>
+
+    <!-- Vorwärts-Blick: ändern wir gerade unsere Meinung? (Lauf-für-Lauf-Entwicklung) -->
+    <section class="glass reveal p-5">
+      <h2 class="font-display text-[22px] font-semibold">{{ $t('evolution.title') }}</h2>
+      <div class="label mb-3">{{ $t('evolution.sub') }}</div>
+      <div class="mb-4 flex items-start gap-2 rounded-md border border-border bg-[color-mix(in_srgb,var(--cool)_8%,transparent)] px-4 py-3 text-[13px] text-muted-foreground">
+        <Info :size="15" class="mt-0.5 shrink-0" />
+        <span>{{ $t('evolution.info') }}</span>
+      </div>
+      <template v-if="trajectories.length">
+        <p v-if="evoSummary" class="mb-4 text-[13px] text-muted-foreground">
+          <template v-if="evoSummary.flipping > 0">
+            {{ $t('evolution.summaryFlip', { flip: evoSummary.flipping, n: evoSummary.n }) }}
+          </template>
+          <template v-else>{{ $t('evolution.summaryStable', { n: evoSummary.n }) }}</template>
+          <template v-if="evoSummary.biggest && Math.abs(evoSummary.biggest.delta) >= 0.5">
+            {{ ' ' }}{{ $t('evolution.summaryBiggest', {
+              day: evoSummary.biggest.day,
+              sign: evoSummary.biggest.delta > 0 ? '+' : '',
+              delta: evoSummary.biggest.delta.toFixed(1),
+            }) }}
+          </template>
+        </p>
+        <RunEvolutionChart :trajectories="trajectories" />
+      </template>
+      <div v-else class="grid h-[160px] place-items-center"><Spinner /></div>
     </section>
 
     <!-- Steuerung: Wert · Vorlauf · Zeitfenster -->

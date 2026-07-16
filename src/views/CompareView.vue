@@ -11,6 +11,7 @@ import { usePlacesStore } from '@/stores/places'
 import { fetchMultiModelForecast, fetchConditions } from '@/api/weather'
 import { WEATHER_MODELS, DEFAULT_MODEL_IDS, modelById } from '@/models'
 import { extractHourly, extractDaily, nearestHourIndex } from '@/lib/series'
+import { spreadVerdict } from '@/lib/confidence'
 import { fmtTemp, fmtDay, tempColor, uvLevel, fmtTime } from '@/lib/format'
 import { wmoIcon } from '@/lib/weatherIcon'
 
@@ -84,6 +85,8 @@ const dailyRows = computed(() => {
       meanMax,
       meanMin,
       disagree,
+      // Bei sehr großer Uneinigkeit ist ein Mittelwert Scheingenauigkeit → offen sagen.
+      verdict: maxes.length >= 2 ? spreadVerdict(disagree) : 'agree',
       nModels: maxes.length,
       rich,
       perModel: daily.value!.models.map((m) => ({
@@ -174,10 +177,10 @@ function disagreeColor(d: number) {
         <div v-if="!dailyRows.length" class="grid h-[320px] place-items-center"><Spinner /></div>
         <div v-for="row in dailyRows" :key="row.day" class="border-b border-border last:border-0">
           <button
-            class="flex w-full items-center gap-3 rounded-md px-1 py-3 text-left transition-colors hover:bg-muted"
+            class="flex w-full items-center gap-2 rounded-md px-1 py-3 text-left transition-colors hover:bg-muted sm:gap-3"
             @click="expandedDay = expandedDay === row.day ? null : row.day"
           >
-            <span class="w-24 text-sm font-medium capitalize text-muted-foreground">{{ fmtDay(row.day) }}</span>
+            <span class="w-14 shrink-0 text-sm font-medium capitalize text-muted-foreground sm:w-24">{{ fmtDay(row.day) }}</span>
             <component
               :is="wmoIcon(row.rich?.code, true)"
               v-if="row.rich"
@@ -192,12 +195,23 @@ function disagreeColor(d: number) {
               <Droplet :size="13" />{{ Math.round(row.rich.precipProb) }}%
             </span>
             <span class="flex-1" />
-            <span class="flex items-baseline gap-2.5">
-              <span class="readout text-[22px]" :style="{ color: tempColor(row.meanMax) }">{{ fmtTemp(row.meanMax) }}</span>
-              <span class="readout text-lg text-muted-foreground">{{ fmtTemp(row.meanMin) }}</span>
+            <span class="flex shrink-0 items-baseline gap-2.5">
+              <span class="readout text-lg sm:text-[22px]" :class="{ 'opacity-55': row.verdict === 'uncertain' }" :style="{ color: tempColor(row.meanMax) }">
+                <span v-if="row.verdict === 'uncertain'" class="text-muted-foreground">~</span>{{ fmtTemp(row.meanMax) }}
+              </span>
+              <span class="readout text-base text-muted-foreground sm:text-lg">{{ fmtTemp(row.meanMin) }}</span>
             </span>
-            <span class="flex w-[84px] items-center justify-end gap-1.5 font-mono text-[11px] text-muted-foreground">
-              <template v-if="row.nModels >= 2">
+            <span class="flex shrink-0 items-center justify-end gap-1.5 font-mono text-[11px] text-muted-foreground sm:w-[104px]">
+              <!-- Modelle weit auseinander → keine Scheingenauigkeit vortäuschen. -->
+              <span
+                v-if="row.verdict === 'uncertain'"
+                class="rounded-full px-2 py-0.5 text-[10px] font-medium text-warn"
+                :style="{ background: 'color-mix(in srgb, var(--warn) 14%, transparent)' }"
+                :title="$t('compare.tooUncertainTitle', { spread: row.disagree.toFixed(0) })"
+              >
+                {{ $t('compare.tooUncertain') }}
+              </span>
+              <template v-else-if="row.nModels >= 2">
                 <span class="h-2 w-2 rounded-full" :style="{ background: disagreeColor(row.disagree) }" />
                 ±{{ (row.disagree / 2).toFixed(1) }}°
               </template>

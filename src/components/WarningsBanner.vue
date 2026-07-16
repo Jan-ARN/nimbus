@@ -51,8 +51,12 @@ function dayLabel(iso?: string) {
         <div class="flex min-w-0 flex-1 flex-col leading-tight">
           <span class="text-sm font-bold">{{ pick(a, 'event') || $t('warnings.fallback') }}</span>
           <span class="truncate text-xs text-muted-foreground">{{ pick(a, 'headline') }}</span>
+          <!-- Mobil: Zeitraum unter der Überschrift (kein fixer Spaltendruck aufs Event). -->
+          <span class="mt-0.5 font-mono text-[11px] text-muted-foreground sm:hidden">
+            {{ dayLabel(a.onset) }} {{ fmtTime(a.onset) }} – {{ fmtTime(a.expires) }}
+          </span>
         </div>
-        <span class="whitespace-nowrap font-mono text-[11px] text-muted-foreground">
+        <span class="hidden whitespace-nowrap font-mono text-[11px] text-muted-foreground sm:inline">
           {{ dayLabel(a.onset) }} {{ fmtTime(a.onset) }} – {{ fmtTime(a.expires) }}
         </span>
         <ChevronDown :size="18" class="shrink-0 transition-transform" :class="{ 'rotate-180': expanded === i }" />

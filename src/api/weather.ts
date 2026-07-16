@@ -109,7 +109,9 @@ export async function fetchEnsemble(place: Place, days = 35): Promise<EnsembleRe
     latitude: place.lat,
     longitude: place.lon,
     models: 'gfs_seamless',
-    hourly: 'temperature_2m',
+    // precipitation je Member → ehrliche Regenwahrscheinlichkeit direkt aus dem
+    // Ensemble (Anteil der Läufe mit messbarem Regen), statt einer Blackbox-Zahl.
+    hourly: 'temperature_2m,precipitation',
     forecast_days: days,
     timezone: 'auto',
   })
@@ -261,6 +263,31 @@ export async function fetchForecastRuns(place: Place, pastDays = 14): Promise<Pr
     hourly: `temperature_2m,${prev}`,
     past_days: pastDays,
     forecast_days: 1,
+    timezone: 'auto',
+  })
+}
+
+// Lückenlose Lauf-Historie (1..7 Tage) — anders als LEAD_DAYS, das nur Stützstellen
+// für den Güte-Vergleich braucht. Hier wollen wir JEDEN aufeinanderfolgenden Lauf,
+// um für einen festen Zieltag zu sehen, wie sich die Prognose Lauf für Lauf bewegt.
+export const EVOLUTION_LEADS = [1, 2, 3, 4, 5, 6, 7] as const
+
+/**
+ * „Wie hat die Prognose sich entschieden?" — für jeden künftigen Zieltag liefert
+ * `temperature_2m_previous_dayN` (bei gleichem Gültigkeitszeitpunkt) den Wert aus
+ * dem Lauf von vor N Tagen. Über die Spalten hinweg gelesen ergibt das die Kette
+ * aufeinanderfolgender Läufe für denselben Tag — Basis für die Konvergenz-/Flip-Flop-Ansicht.
+ * Empirisch bestätigt: bei festem Zeitstempel sind die Spalten offset-ausgerichtet
+ * (Lauf N Tage älter), alle künftigen Tage sind lückenlos befüllt.
+ */
+export async function fetchRunEvolution(place: Place): Promise<PreviousRunsResponse> {
+  const prev = EVOLUTION_LEADS.map((n) => `temperature_2m_previous_day${n}`).join(',')
+  return getJson<PreviousRunsResponse>('/api/previous', {
+    latitude: place.lat,
+    longitude: place.lon,
+    hourly: `temperature_2m,${prev}`,
+    past_days: 2,
+    forecast_days: 7,
     timezone: 'auto',
   })
 }

@@ -84,12 +84,12 @@ const loading = computed(() => !days.value.length)
 <template>
   <div class="flex flex-col gap-6">
     <!-- „Ist das normal?" — heute vs. Klima-Normalwert 1991–2020 -->
-    <section class="glass grid-texture reveal flex items-center gap-6 p-6">
+    <section class="glass grid-texture reveal flex items-center gap-4 p-6 sm:gap-6">
       <div
-        class="grid h-[76px] w-[76px] shrink-0 place-items-center rounded-2xl border"
+        class="grid h-14 w-14 shrink-0 place-items-center rounded-2xl border sm:h-[76px] sm:w-[76px]"
         :style="{ borderColor: anomalyColor, background: `color-mix(in srgb, ${anomalyColor} 16%, transparent)` }"
       >
-        <component :is="(anomaly ?? 0) >= 0 ? TrendingUp : TrendingDown" :size="36" :style="{ color: anomalyColor }" />
+        <component :is="(anomaly ?? 0) >= 0 ? TrendingUp : TrendingDown" :size="34" :style="{ color: anomalyColor }" />
       </div>
       <div class="min-w-0">
         <div class="label">{{ active.name }} · {{ $t('records.title') }}</div>

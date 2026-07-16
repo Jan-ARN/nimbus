@@ -53,22 +53,24 @@ const LOCALES: Locale[] = ['de', 'en']
     <SkyCanvas />
 
     <header
-      class="sticky top-0 z-50 flex items-center justify-between gap-4 border-b border-border px-5 py-3"
+      class="sticky top-0 z-50 flex items-center justify-between gap-3 border-b border-border px-4 py-3 sm:px-5"
       style="background: linear-gradient(180deg, color-mix(in srgb, var(--background) 95%, transparent), color-mix(in srgb, var(--background) 82%, transparent))"
     >
-      <router-link to="/models" class="group flex items-center gap-3">
+      <router-link to="/models" class="group flex min-w-0 items-center gap-3">
         <span
-          class="grid h-10 w-10 place-items-center rounded-xl border border-border text-primary transition-transform group-hover:-translate-y-px"
+          class="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-border text-primary transition-transform group-hover:-translate-y-px"
           style="background: color-mix(in srgb, var(--primary) 14%, transparent); box-shadow: 0 0 22px -4px var(--sky-glow)"
         ><NimbusMark :size="24" /></span>
-        <span class="flex flex-col leading-none">
+        <span class="flex min-w-0 flex-col leading-none">
           <span class="font-display text-xl font-semibold tracking-tight">Nimbus</span>
-          <span class="label mt-0.5 max-w-[42vw] truncate sm:max-w-none">{{ t('app.skyOver') }} {{ active.name }}</span>
+          <span class="label mt-0.5 truncate">{{ t('app.skyOver') }} {{ active.name }}</span>
         </span>
       </router-link>
 
       <div class="flex items-center gap-2">
-        <nav class="flex gap-1 rounded-full border border-border bg-[color-mix(in_srgb,var(--background)_55%,transparent)] p-1">
+        <!-- Desktop-Navigation: Pillen-Leiste. Auf Mobil ersetzt durch die
+             fixierte Tab-Leiste am unteren Rand (siehe unten). -->
+        <nav class="hidden gap-1 rounded-full border border-border bg-[color-mix(in_srgb,var(--background)_55%,transparent)] p-1 sm:flex">
           <router-link
             v-for="tab in tabs"
             :key="tab.to"
@@ -82,7 +84,7 @@ const LOCALES: Locale[] = ['de', 'en']
 
         <!-- Sprachumschalter: Wahl landet in localStorage (siehe setLocale) -->
         <div
-          class="flex items-center gap-0.5 rounded-full border border-border bg-[color-mix(in_srgb,var(--background)_55%,transparent)] p-1"
+          class="flex shrink-0 items-center gap-0.5 rounded-full border border-border bg-[color-mix(in_srgb,var(--background)_55%,transparent)] p-1"
           role="group"
           :aria-label="t('app.langLabel')"
         >
@@ -117,6 +119,20 @@ const LOCALES: Locale[] = ['de', 'en']
         </router-view>
       </div>
     </main>
+
+    <!-- Mobile-Navigation: fixierte Tab-Leiste am unteren Rand (Daumen-Reichweite).
+         Nur < sm sichtbar; Desktop nutzt die Pillen-Leiste im Header. -->
+    <nav class="bottom-nav" :aria-label="t('app.langLabel')">
+      <router-link
+        v-for="tab in tabs"
+        :key="tab.to"
+        :to="tab.to"
+        class="bottom-nav-item"
+      >
+        <component :is="tab.icon" :size="21" />
+        <span>{{ t(tab.labelKey) }}</span>
+      </router-link>
+    </nav>
   </div>
 </template>
 
@@ -143,5 +159,55 @@ const LOCALES: Locale[] = ['de', 'en']
   .nav-label {
     display: none;
   }
+}
+
+/* Untere Tab-Leiste (nur Mobil). Fixiert, mit Safe-Area-Puffer für die
+   Home-Indicator-Zone auf iOS. Der Hauptinhalt reserviert unten Platz (pb-24). */
+.bottom-nav {
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 50;
+  display: flex;
+  align-items: stretch;
+  justify-content: space-around;
+  gap: 2px;
+  padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--background) 92%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+/* Nur Mobil: ab sm nutzt der Header die Pillen-Leiste. In den (spezifischeren)
+   scoped-Styles hidden statt via sm:hidden-Utility, sonst gewinnt display:flex. */
+@media (min-width: 640px) {
+  .bottom-nav {
+    display: none;
+  }
+}
+.bottom-nav-item {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 2px;
+  border-radius: 14px;
+  color: var(--muted-foreground);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  transition:
+    color 0.18s ease,
+    background 0.18s ease;
+}
+.bottom-nav-item span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bottom-nav-item.router-link-active {
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
 }
 </style>

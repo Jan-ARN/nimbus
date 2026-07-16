@@ -227,3 +227,19 @@
     transition: none;
   }
 }
+
+/* ── Mobile-Feinschliff ─────────────────────────────────────────────────────
+   Echtes Handy-Layout statt gestauchtem Desktop: die Inhaltskarten (jede trägt
+   .glass.reveal — Ortswahl & Warnbanner bewusst NICHT) bekommen knapperes
+   Padding, damit mehr Inhalt in den Viewport passt und nichts überläuft. Der
+   Zwei-Klassen-Selektor gewinnt gegen die einklassigen p-5/p-6/p-7-Utilities. */
+@media (max-width: 640px) {
+  .glass.reveal {
+    padding: 16px;
+  }
+  /* Instrument-Strip in der Hero: engere Zellen → 2 Werte pro Reihe bleiben lesbar. */
+  .strip .cell {
+    padding: 11px 12px 12px;
+    flex-basis: 108px;
+  }
+}
